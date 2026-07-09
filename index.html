@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🍊 濟州島旅遊地圖</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --topbar-h: 44px;
+  --filterbar-h: 44px;
+  --sidebar-w: 270px;
+  --col-交通: #718096; --col-住宿: #805ad5; --col-景點: #3182ce;
+  --col-購物: #e53e3e; --col-咖啡廳: #d69e2e; --col-美食: #38a169;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: "Noto Sans TC","Apple SD Gothic Neo","Helvetica Neue",sans-serif; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: #1a1a2e; }
+
+/* ── TOP BAR ── */
+.topbar { background: #1a1a2e; color: #fff; padding: 0 14px; height: var(--topbar-h); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.topbar h1 { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.topbar h1 span { color: #f4a261; }
+.count-badge { background: #f4a261; color: #1a1a2e; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 12px; white-space: nowrap; }
+/* hamburger – mobile only */
+.menu-btn { display: none; margin-left: auto; background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; padding: 4px; line-height: 1; }
+
+/* ── FILTER BAR ── */
+.filterbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 10px; height: var(--filterbar-h); display: flex; gap: 5px; align-items: center; flex-shrink: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.filterbar::-webkit-scrollbar { display: none; }
+.filter-label { font-size: 10px; color: #718096; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+.filter-btn { border: 1.5px solid #e2e8f0; background: #f7fafc; color: #4a5568; font-size: 11px; padding: 4px 9px; border-radius: 20px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; font-weight: 500; touch-action: manipulation; }
+.filter-btn:hover { border-color: #a0aec0; background: #edf2f7; }
+.filter-btn.active { color: #fff !important; border-color: transparent !important; font-weight: 700; }
+.cat-交通.active  { background: var(--col-交通); }
+.cat-住宿.active  { background: var(--col-住宿); }
+.cat-景點.active  { background: var(--col-景點); }
+.cat-購物.active  { background: var(--col-購物); }
+.cat-咖啡廳.active{ background: var(--col-咖啡廳); }
+.cat-美食.active  { background: var(--col-美食); }
+.zone-btn.active  { background: #2d3748; }
+.sep { width: 1px; height: 20px; background: #e2e8f0; flex-shrink: 0; }
+
+/* ── MAIN ── */
+.main { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w); background: #fff;
+  overflow-y: auto; border-right: 1px solid #e2e8f0;
+  flex-shrink: 0; display: flex; flex-direction: column;
+  transition: transform 0.3s ease;
+}
+.sidebar-header { padding: 8px 12px; font-size: 11px; color: #718096; font-weight: 700; border-bottom: 1px solid #edf2f7; position: sticky; top: 0; background: #fff; z-index: 2; display: flex; justify-content: space-between; align-items: center; }
+.sidebar-close { display: none; background: none; border: none; font-size: 18px; cursor: pointer; color: #718096; padding: 0 4px; }
+.place-item { padding: 9px 12px; border-bottom: 1px solid #f7fafc; cursor: pointer; transition: background 0.1s; }
+.place-item:active { background: #edf2f7; }
+.place-item.selected { background: #ebf8ff; border-left: 3px solid #3182ce; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; flex-shrink: 0; }
+.pname { font-size: 13px; font-weight: 700; color: #2d3748; display: flex; align-items: center; }
+.psub  { font-size: 10px; color: #a0aec0; margin-top: 1px; padding-left: 13px; }
+.phours{ font-size: 10px; color: #718096; margin-top: 2px; padding-left: 13px; }
+.pprice{ font-size: 10px; color: #f4a261; font-weight: 600; padding-left: 13px; }
+.cat-header { padding: 5px 12px 3px; font-size: 10px; font-weight: 800; background: #f7fafc; border-bottom: 1px solid #edf2f7; position: sticky; top: 33px; z-index: 1; }
+.no-results { padding: 24px 12px; text-align: center; color: #a0aec0; font-size: 12px; }
+
+/* ── MAP ── */
+#map { flex: 1; z-index: 0; }
+
+/* overlay when sidebar open on mobile */
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 8998; }
+
+/* ── POPUP ── */
+.my-popup {
+  position: fixed; background: #fff; border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  padding: 14px 16px; width: min(300px, calc(100vw - 24px));
+  z-index: 9999; pointer-events: auto;
+}
+/* Mobile: popup pinned to bottom */
+@media (max-width: 640px) {
+  .my-popup {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    border-radius: 16px 16px 0 0;
+    max-height: 70dvh;
+    overflow-y: auto;
+  }
+}
+.popup-drag { width: 36px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto 10px; }
+.popup-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+.popup-close-btn { width: 24px; height: 24px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; font-size: 13px; line-height: 24px; text-align: center; color: #666; flex-shrink: 0; margin-left: 8px; }
+.popup-close-btn:hover, .popup-close-btn:active { background: #e2e8f0; }
+.popup-cat  { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 2px; }
+.popup-name { font-size: 15px; font-weight: 800; color: #1a202c; line-height: 1.2; }
+.popup-kr   { font-size: 11px; color: #a0aec0; margin: 3px 0 7px; }
+.popup-row  { font-size: 11px; color: #4a5568; margin-bottom: 3px; display: flex; gap: 6px; }
+.popup-row b{ color: #2d3748; flex-shrink: 0; }
+.popup-addr-block { background: #f7fafc; border-radius: 7px; padding: 7px 10px; margin: 7px 0; font-size: 11px; color: #4a5568; line-height: 1.6; }
+.addr-label { font-size: 10px; font-weight: 700; color: #a0aec0; margin-bottom: 2px; }
+.popup-note { font-size: 11px; color: #718096; line-height: 1.5; margin-top: 7px; padding-top: 7px; border-top: 1px solid #f0f0f0; max-height: 80px; overflow-y: auto; }
+.popup-btns { display: flex; gap: 7px; margin-top: 10px; }
+.popup-btn { flex: 1; text-align: center; padding: 8px 4px; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none; color: #fff; }
+.btn-gmap  { background: #4285F4; }
+.btn-naver { background: #03C75A; }
+
+/* ── MOBILE RWD ── */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 100%; }
+
+  .menu-btn { display: block; }
+  .sidebar-close { display: block; }
+  .count-badge { display: none; }
+
+  .sidebar {
+    position: fixed; top: calc(var(--topbar-h) + var(--filterbar-h));
+    bottom: 0; left: 0; width: 100%;
+    transform: translateX(-100%);
+    z-index: 8999; border-right: none;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay.show { display: block; }
+
+  #map { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🍊 濟州島 <span>7天6夜</span> 旅遊地圖</h1>
+  <span class="count-badge" id="visible-count">95 個地點</span>
+  <button class="menu-btn" onclick="toggleSidebar()" aria-label="清單">☰</button>
+</div>
+
+<div class="filterbar">
+  <span class="filter-label">類別</span>
+  <button class="filter-btn cat-交通 active"   data-cat="交通"   onclick="toggleCat(this)">🚗 交通</button>
+  <button class="filter-btn cat-住宿 active"   data-cat="住宿"   onclick="toggleCat(this)">🏨 住宿</button>
+  <button class="filter-btn cat-景點 active"   data-cat="景點"   onclick="toggleCat(this)">📍 景點</button>
+  <button class="filter-btn cat-購物 active"   data-cat="購物"   onclick="toggleCat(this)">🛍️ 購物</button>
+  <button class="filter-btn cat-咖啡廳 active" data-cat="咖啡廳" onclick="toggleCat(this)">☕ 咖啡廳</button>
+  <button class="filter-btn cat-美食 active"   data-cat="美食"   onclick="toggleCat(this)">🍽️ 美食</button>
+  <div class="sep"></div>
+  <span class="filter-label">區域</span>
+  <button class="filter-btn zone-btn active" data-zone="all"   onclick="setZone(this)">全部</button>
+  <button class="filter-btn zone-btn"        data-zone="north" onclick="setZone(this)">北部</button>
+  <button class="filter-btn zone-btn"        data-zone="east"  onclick="setZone(this)">東部</button>
+  <button class="filter-btn zone-btn"        data-zone="west"  onclick="setZone(this)">西部</button>
+  <button class="filter-btn zone-btn"        data-zone="south" onclick="setZone(this)">南部</button>
+  <button class="filter-btn zone-btn"        data-zone="udo"   onclick="setZone(this)">牛島</button>
+</div>
+
+<div class="main">
+  <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span id="list-title">所有地點</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span id="list-count" style="color:#f4a261"></span>
+        <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+      </span>
+    </div>
+    <div id="place-list"></div>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<div id="my-popup" class="my-popup" style="display:none;"></div>
+
+<script>
+const COLORS = {"交通":"#718096","住宿":"#805ad5","景點":"#3182ce","購物":"#e53e3e","咖啡廳":"#d69e2e","美食":"#38a169"};
+const EMOJIS = {"交通":"🚗","住宿":"🏨","景點":"📍","購物":"🛍️","咖啡廳":"☕","美食":"🍽️"};
+const DATA = [{"cat": "交通", "zh": "濟州國際機場", "en": "Jeju International Airport", "kr": "제주국제공항", "addr_en": "2 Gonghang-ro, Jeju, South Korea", "addr_kr": "2 공항로, 제주시", "lat": 33.5070772, "lng": 126.4934311, "hours": "24小時", "price": "免費", "note": "全島最大國際機場。出境後可換SIM卡、兌換貨幣；出境大廳有大量濟州限定伴手禮與餐廳。"}, {"cat": "交通", "zh": "樂天租車(濟州機場)", "en": "Lotte Rent-a-Car (Jeju Airport)", "kr": "롯데렌터카 제주공항점", "addr_en": "Jeju International Airport area, Jeju, South Korea", "addr_kr": "제주시 도두로 157", "lat": 33.5092041, "lng": 126.5031542, "hours": "06:00-23:00", "price": "車費另計", "note": "機場附近取還車。本次租用 SORENTO 5座，7天費用 976100韓幣。距航廈步行約5分鐘。"}, {"cat": "住宿", "zh": "MJ度假村", "en": "MJ Resort", "kr": "MJ리조트", "addr_en": "1810 Hado-ri, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 하도리 1810", "lat": 33.5289407, "lng": 126.879766, "hours": "24小時", "price": "未提供", "note": "位於濟州東部，面海景觀絕佳。房間寬敞舒適，床品高品質，早餐選擇豐富（中西韓皆有）。評分4.8分極高。7/23入住。"}, {"cat": "住宿", "zh": "民宿(Pyoseon 143-23)", "en": "Guesthouse (Pyoseon)", "kr": "게스트하우스 표선", "addr_en": "143-23 Hanmaeumechodunghakgyo-ro, Pyoseon-myeon, Seogwipo, South Korea", "addr_kr": "서귀포시 표선면 한매음초등로 143-23", "lat": 33.3517881, "lng": 126.7870394, "hours": "依訂房平台", "price": "未提供", "note": "位於西歸浦表善面，鄰近表善海水浴場。7/24入住，依訂房平台所載入退房時間為準。"}, {"cat": "住宿", "zh": "濟州樂天城市酒店", "en": "LOTTE City Hotel Jeju", "kr": "롯데시티호텔 제주", "addr_en": "83 Doryeong-ro, Jeju, South Korea", "addr_kr": "제주시 도령로 83", "lat": 33.4905955, "lng": 126.4864277, "hours": "24小時", "price": "未提供", "note": "位於濟州市區蓮洞，鄰近購物街與餐廳。房間整潔舒適，B1有7-11便利商店，附設早餐自助餐。評分4.3分。7/28入住。"}, {"cat": "景點", "zh": "牛島", "en": "Udo Island", "kr": "우도", "addr_en": "Udo-myeon, Jeju, South Korea", "addr_kr": "제주시 구좌읍 우도", "lat": 33.5042977, "lng": 126.9540479, "hours": "依渡輪班次", "price": "往返渡輪 約5,500韓幣/人", "note": "由城山港搭渡輪約15分鐘可達的小島。必吃花生冰淇淋，可租電動腳踏車或小電動車環島。海水清澈透明，擁有多個絕美海灘（西濱白沙、下古水洞）。"}, {"cat": "景點", "zh": "濟州水上星球", "en": "Aqua Planet Jeju", "kr": "아쿠아플래닛 제주", "addr_en": "95 Seopjikoji-ro, Seongsan-eup, Seogwipo, South Korea", "addr_kr": "서귀포시 성산읍 섭지코지로 95", "lat": 33.4327833, "lng": 126.9278223, "hours": "09:30-18:00", "price": "約37,000韓幣/人", "note": "韓國最大水族館之一。設有精彩的海女潛水表演（每日數場），海底隧道與大型魚缸令人震撼。適合雨天或天氣不佳時的室內活動。停車免費。"}, {"cat": "景點", "zh": "Snoopy Garden", "en": "Snoopy Garden", "kr": "스누피가든", "addr_en": "930 Geumbaekjo-ro, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 금백조로 930", "lat": 33.4441972, "lng": 126.7783058, "hours": "09:00-18:00", "price": "約15,000韓幣/人", "note": "以史努比和花生漫畫為主題的室內外複合樂園。設有大量拍照打卡點，室內展館展示史努比原版漫畫手稿，附設主題咖啡廳與限定商品店。約需2-3小時。"}, {"cat": "景點", "zh": "Hello Kitty Island", "en": "Hello Kitty Island", "kr": "헬로키티아일랜드", "addr_en": "Jungmun Tourist Complex, Seogwipo, South Korea", "addr_kr": "서귀포시 안덕면 중문관광로 72", "lat": 33.2902148, "lng": 126.3520461, "hours": "09:00-17:00", "price": "約13,000韓幣/人", "note": "以Hello Kitty為主題的室內主題樂園，設有多個場景拍照區與互動展覽，適合親子遊與Kitty粉絲。位於中文旅遊區。"}, {"cat": "景點", "zh": "9.81公園賽車", "en": "9.81 Park", "kr": "9.81파크", "addr_en": "880-24 Cheondeok-ro, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 천덕로 880-24", "lat": 33.3899391, "lng": 126.3663248, "hours": "09:00-18:00", "price": "約30,000-60,000韓幣/人(依套餐)", "note": "韓國第一個無動力重力賽車主題公園，搭配高科技APP記錄賽車成績。設有多種速度的賽道，還有射箭、飛盤等戶外活動。適合親子與競速愛好者。建議提前上網購票。"}, {"cat": "景點", "zh": "東門市場", "en": "Dongmun Traditional Market", "kr": "동문전통시장", "addr_en": "20 Gwandeok-ro 14-gil, Jeju, South Korea", "addr_kr": "제주시 관덕로14길 20", "lat": 33.5115133, "lng": 126.5262564, "hours": "08:00-21:00", "price": "依消費而定", "note": "濟州最具代表性的傳統市場，有超過200家攤位。必買：新鮮橘子汁、橘子米糕、濟州伴手禮。夜晚燈火通明氣氛熱鬧。附近停車場多，交通便利。"}, {"cat": "景點", "zh": "西歸浦偶來市場", "en": "Seogwipo Maeil Olle Market", "kr": "서귀포 매일올레시장", "addr_en": "18 Jungang-ro 62beon-gil, Seogwipo, South Korea", "addr_kr": "서귀포시 중앙로62번길 18", "lat": 33.2487163, "lng": 126.5640617, "hours": "07:00-21:00", "price": "依消費而定", "note": "西歸浦最大最古老的傳統市場。以新鮮海鮮、黑豬肉料理、濟州農產品與各式街頭小吃聞名。約200家店舖，是感受西歸浦在地生活的好去處。"}, {"cat": "景點", "zh": "彩虹海岸公路", "en": "Rainbow Coastal Road (Doduhaean)", "kr": "도두해안도로(무지개해안도로)", "addr_en": "Doduhaean-ro, Jeju, South Korea", "addr_kr": "제주시 도두해안로", "lat": 33.509258, "lng": 126.4719749, "hours": "24小時", "price": "免費", "note": "道頭洞海岸公路，因路旁五彩繽紛的護欄而得名「彩虹海岸公路」。緊鄰濟州機場，是絕佳的早晨或傍晚散步勝地，可欣賞海景與夕陽，也是拍照熱點。"}, {"cat": "景點", "zh": "看海豚(Dolphin Spot)", "en": "Dolphin Spot", "kr": "돌고래 관찰 포인트", "addr_en": "Daejeong-eup coastal area, Seogwipo, South Korea", "addr_kr": "서귀포시 대정읍 해안가", "lat": 33.2476672, "lng": 126.2010405, "hours": "無固定（建議上午）", "price": "免費", "note": "位於濟州西南端的大靜邑海岸，是野生海豚出沒的知名觀察點。也可選擇搭乘M1971遊艇出海尋豚，機率更高。"}, {"cat": "景點", "zh": "Arte Museum Jeju", "en": "Arte Museum Jeju", "kr": "아르뜨뮤지엄 제주", "addr_en": "478 Eorimbi-ro, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 어림비로 478", "lat": 33.3964708, "lng": 126.3446147, "hours": "10:00-20:00", "price": "約20,000韓幣/人", "note": "超沉浸式多媒體藝術館，以震撼的雷射光影與投影展示全球知名藝術作品（梵谷、克林姆等）。全程室內，是雨天必選景點。附設互動式藝術咖啡廳，可以在投影桌上享用飲品。"}, {"cat": "景點", "zh": "海女博物館", "en": "Jeju Haenyeo Museum", "kr": "제주 해녀박물관", "addr_en": "26 Haenyeobangmulgwan-gil, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 해녀박물관길 26", "lat": 33.5236474, "lng": 126.8634357, "hours": "週一公休；週二-日 09:00-18:00", "price": "約1,100韓幣/人", "note": "深入介紹濟州海女文化的博物館，設有中英日韓語紀錄片放映，展示海女傳統潛水工具與生活方式。對面就能看到真正的海女在海中作業。約需1-2小時。"}, {"cat": "景點", "zh": "咸德海灘", "en": "Hamdeok Beach", "kr": "함덕해수욕장", "addr_en": "Hamdeok Beach, Jocheon-eup, Jeju, South Korea", "addr_kr": "제주시 조천읍 신북로 1", "lat": 33.5434231, "lng": 126.6697752, "hours": "24小時", "price": "免費", "note": "水質清澈的淺藍色海灘，細白沙灘延伸廣闊。水深較淺，適合泳者及家庭出遊。沙灘旁有 Delmoondo 等知名咖啡廳，附近也有餐廳與便利商店。晚霞景色絕美。"}, {"cat": "景點", "zh": "挾才海水浴場", "en": "Hyeopjae Beach", "kr": "협재해수욕장", "addr_en": "329-10 Hallim-ro, Hallim-eup, Jeju, South Korea", "addr_kr": "제주시 한림읍 한림로 329-10", "lat": 33.3942945, "lng": 126.2398813, "hours": "24小時", "price": "免費", "note": "濟州西部最美海灘之一，以蒂芬妮藍的清澈海水聞名。遠眺可見飛揚島。沙質細白、水質純淨，旁邊有比揚島火山。附近有Starbucks海景店。"}, {"cat": "景點", "zh": "涯月邑(咖啡一條街)", "en": "Aewol-eup (Cafe Street)", "kr": "애월읍 카페거리", "addr_en": "Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍", "lat": 33.4623497, "lng": 126.3103487, "hours": "依各店家", "price": "依各店家", "note": "濟州西北部最熱鬧的咖啡廳聚集區，沿著海岸公路分佈多家設計感十足的海景咖啡廳。日落時分最美，許多咖啡廳都設有戶外觀景區。"}, {"cat": "景點", "zh": "山茶花之丘", "en": "Camellia Hill", "kr": "카멜리아힐", "addr_en": "166 Byeongak-ro, Andeok-myeon, Seogwipo, South Korea", "addr_kr": "서귀포시 안덕면 병악로 166", "lat": 33.2898049, "lng": 126.3682983, "hours": "08:30-18:00", "price": "約12,000韓幣/人", "note": "佔地廣闊的山茶花主題植物園，種植6,000株以上的山茶花。季節花卉豐富（繡球花、山茶花、鬱金香），規劃完善的步行路線，是韓劇取景地之一。有購買樂天租車確認書可享8折優惠。"}, {"cat": "景點", "zh": "Osulloc茶博物館", "en": "Osulloc Tea Museum", "kr": "오설록 티뮤지엄", "addr_en": "15 Sinhwayeoksa-ro, Andeok-myeon, Seogwipo, South Korea", "addr_kr": "서귀포시 안덕면 신화역사로 15", "lat": 33.3059438, "lng": 126.289437, "hours": "09:00-18:00", "price": "免費入場(消費另計)", "note": "濟州知名茶園博物館，展示韓國茶文化歷史，周圍有廣闊的綠茶田可拍照。必試抹茶冰淇淋、抹茶卷蛋糕。附設伊蒂之屋 Jeju House（提供輕食）。周邊有茶葉、抹茶甜點伴手禮可購買。"}, {"cat": "景點", "zh": "潛水艇(西歸浦)", "en": "Seogwipo Submarine", "kr": "서귀포잠수함", "addr_en": "40 Namseongjung-ro, Seogwipo, South Korea", "addr_kr": "서귀포시 남성중로 40", "lat": 33.2397742, "lng": 126.5586913, "hours": "09:20-17:20", "price": "約75,000韓幣/人(成人)", "note": "可下潛至水下40公尺的觀光潛水艇，透過圓形玻璃窗觀賞珊瑚礁與海底魚群。全程約40分鐘，不需游泳能力。老少皆宜的獨特體驗。"}, {"cat": "景點", "zh": "城山日出峰", "en": "Seongsan Ilchulbong", "kr": "성산일출봉", "addr_en": "Seongsan Ilchulbong, Seogwipo, South Korea", "addr_kr": "서귀포시 성산읍 성산리", "lat": 33.458056, "lng": 126.9425, "hours": "依季節(夏季約04:30開放)", "price": "約5,000韓幣/人", "note": "UNESCO世界遺產，濟州東部地標。由海底火山噴發形成的巨大火山口，爬上頂部可俯瞰360度絕景。日出時分最美，建議早起前往（夏季日出約05:20）。現已確認票務處開放時間04:30（2026年6月）。"}, {"cat": "景點", "zh": "柱狀節理帶", "en": "Jusangjeolli Cliff", "kr": "주상절리대", "addr_en": "36-30 Ieodo-ro, Seogwipo, South Korea", "addr_kr": "서귀포시 이어도로 36-30", "lat": 33.2367938, "lng": 126.4254867, "hours": "09:00-17:30", "price": "約2,000韓幣/人", "note": "大自然鬼斧神工的六角形柱狀玄武岩懸崖景觀，由火山熔岩冷卻收縮形成。沿著步道觀景僅需約30分鐘。停車免費。推薦傍晚前往可同時欣賞夕陽。"}, {"cat": "景點", "zh": "月汀里海灘", "en": "Woljeongri Beach", "kr": "월정리해변", "addr_en": "Woljeong-ri, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 월정리", "lat": 33.5559739, "lng": 126.7961709, "hours": "24小時", "price": "免費", "note": "濟州東北部最火的打卡海灘，以令人屏息的「果凍海」色彩聞名。沿海岸公路有多家設計感咖啡廳，是咖啡廳巡禮的絕佳路線。白色細沙配上漸層藍綠海水，拍照效果絕美。"}, {"cat": "景點", "zh": "金寧海水浴場", "en": "Gimnyeong Beach", "kr": "김녕해수욕장", "addr_en": "Gimnyeong-ri, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 김녕리", "lat": 33.5587949, "lng": 126.7542819, "hours": "24小時", "price": "免費", "note": "位於東北部的清澈海灘，遊客較月汀里少，更適合安靜享受海景。水質優良，附近有烤肉餐廳與便利商店。"}, {"cat": "景點", "zh": "杏源海灘(柯南海灘)", "en": "Haengwon Beach (Conan Beach)", "kr": "행원해변(코난해변)", "addr_en": "Haengwon-ri, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 행원리", "lat": 33.5575318, "lng": 126.8112241, "hours": "24小時", "price": "免費", "note": "又稱「柯南海灘」，因名偵探柯南動畫取景地而聞名。保留了濟州原始自然風貌，遊客少，景色純樸。"}, {"cat": "景點", "zh": "小羊肖恩羊駝牧場", "en": "Alpaca World", "kr": "알파카월드", "addr_en": "1534 Dongwang-ro, Andeok-myeon, Seogwipo, South Korea", "addr_kr": "서귀포시 안덕면 동왕로 1534", "lat": 33.4099012, "lng": 126.3667667, "hours": "10:00-18:00", "price": "約15,000韓幣/人", "note": "可近距離與羊駝、羊等動物互動的小型農場，以可愛的羊駝拍照而廣受歡迎。適合親子遊。"}, {"cat": "景點", "zh": "泰迪熊博物館", "en": "Teddy Bear Museum", "kr": "테디베어박물관", "addr_en": "2297-1 Jungmun-dong, Seogwipo, South Korea", "addr_kr": "서귀포시 중문동 2297-1", "lat": 33.2503549, "lng": 126.4121736, "hours": "09:00-18:00", "price": "約15,000韓幣/人", "note": "展示世界各地不同主題泰迪熊的主題博物館，位於中文旅遊區。"}, {"cat": "景點", "zh": "萬丈窟", "en": "Manjanggul Lava Tube", "kr": "만장굴", "addr_en": "182 Manjanggul-gil, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 만장굴길 182", "lat": 33.5282463, "lng": 126.7702874, "hours": "09:00-17:00", "price": "約4,000韓幣(成人)", "note": "UNESCO世界遺產火山熔岩洞窟，全長7.4公里，開放遊客進入約1公里。洞內常年約13-18°C清涼宜人。末端有壯觀的熔岩柱。步道平坦好走，約需90分鐘。建議攜帶外套。"}, {"cat": "景點", "zh": "五日民俗市場", "en": "Jeju Folk Five-day Market", "kr": "제주민속오일시장", "addr_en": "26 Oiljanggong-ro, Jeju, South Korea", "addr_kr": "제주시 오일장공로 26", "lat": 33.4969018, "lng": 126.4753936, "hours": "07:00-18:00 (僅逢每月2、7、12、17、22、27日開市)", "price": "依消費", "note": "濟州最大的五日傳統市集，每月逢尾數2、7日才開市，販售農產品、海鮮、衣物、生活用品，非常在地。"}, {"cat": "景點", "zh": "Yumin Art Nouveau Collection", "en": "Yumin Art Nouveau Collection", "kr": "유민아르누보뮤지엄", "addr_en": "Seongsan-eup, Jeju, South Korea", "addr_kr": "제주시 성산읍 고성리 산 134-1", "lat": 33.4291682, "lng": 126.9322911, "hours": "09:00-18:00", "price": "約10,000韓幣/人", "note": "安藤忠雄設計的美術館，位於涉地可支（攝地可支）。展示歐洲新藝術運動時期的玻璃工藝品與家具，建築本身亦是清水混凝土美學的代表。"}, {"cat": "景點", "zh": "Glass House", "en": "Jeju Glass House", "kr": "유리의집", "addr_en": "46 Goseong-ri, Seongsan-eup, Seogwipo, South Korea", "addr_kr": "서귀포시 성산읍 고성리 46", "lat": 33.4290982, "lng": 126.9339479, "hours": "需現場確認", "price": "未提供", "note": "安藤忠雄設計的觀景建築，位於涉地可支，與Yumin美術館相距約500公尺步行可達。融合觀景、咖啡廳功能，建築以玻璃與清水混凝土為主，可欣賞海景。"}, {"cat": "景點", "zh": "M1971遊艇俱樂部", "en": "M1971 Yacht Tour", "kr": "M1971요트클럽하우스", "addr_en": "128 Choenamdanhaean-ro, Daejeong-eup, Seogwipo, South Korea", "addr_kr": "서귀포시 대정읍 최남단해안로 128", "lat": 33.2099652, "lng": 126.2568769, "hours": "09:00-18:00", "price": "遊艇體驗約50,000韓幣/人", "note": "集海景咖啡廳與遊艇海豚觀賞於一體。搭乘白色豪華遊艇出海，在濟州西南海域觀賞野生海豚的機率極高（評分4.6分，廣受好評）。建議提前於Instagram或官方電話預約。"}, {"cat": "景點", "zh": "寺水自然休養林", "en": "Jeolmul Natural Recreation Forest", "kr": "절물자연휴양림", "addr_en": "584 Myeongnim-ro, Jeju, South Korea", "addr_kr": "제주시 명림로 584", "lat": 33.4393622, "lng": 126.6299099, "hours": "07:00-18:00", "price": "約1,000韓幣/人", "note": "位於濟州市區東南的原始杉樹森林，規劃完善的平坦木棧道。終年雲霧繚繞，芬多精濃郁，深受韓國本地人喜愛。有30分鐘至3小時不同長度的步道可選擇。評分4.6分高人氣。"}, {"cat": "購物", "zh": "蓮洞七星街", "en": "Chilseongno Shopping Street", "kr": "칠성로 쇼핑타운", "addr_en": "Chilseongno, Jeju, South Korea", "addr_kr": "제주시 중앙로5길 (칠성로)", "lat": 33.5132301, "lng": 126.525451, "hours": "約12:00-22:00", "price": "依消費", "note": "濟州市區主要購物街，設有地上與地下購物商場。可找到韓國人氣品牌如Covernat、Matin Kim等。需憑護照至濟州觀光中心領取折扣券（滿10,000韓幣折5,000）。"}, {"cat": "購物", "zh": "Sorangseureon 連洞店", "en": "Sorangseureon Yeondong", "kr": "소랑스럽제주 연동", "addr_en": "87 Noyeon-ro, Jeju, South Korea", "addr_kr": "제주시 노연로 87 1층", "lat": 33.4860637, "lng": 126.4894674, "hours": "10:00-24:00", "price": "依消費", "note": "專售「Line Friends」旗下線條小狗等角色周邊商品，濟州限定款尤其受歡迎。店面寬敞，商品種類豐富。可在市區逛街時順道前往。"}, {"cat": "購物", "zh": "Sorangseureon 舊左店", "en": "Sorangseureon Gujwa", "kr": "소랑스럽제주 구좌", "addr_en": "Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍", "lat": 33.5535978, "lng": 126.7155939, "hours": "08:00-19:00", "price": "依消費", "note": "Line Friends線條小狗周邊的舊左邑分店，位於東福里/月汀里一帶，可在遊東部景點時順道購物。"}, {"cat": "購物", "zh": "米菲Gyul Gyul Store(道頭店)", "en": "Miffy Gyul Gyul Store (Dodu)", "kr": "계계스토어 도두점", "addr_en": "238 Seohaean-ro, Jeju, South Korea", "addr_kr": "제주시 서해안로 238", "lat": 33.5087904, "lng": 126.471508, "hours": "09:00-20:00", "price": "依消費", "note": "專售濟州限定米菲兔周邊商品的特色禮品店，緊鄰濟州機場。商品包括戴橘子帽的米菲玩偶、文具、配件等。注意：熱銷款有時會售罄，建議早到。評分3.2（評論指出有時無庫存）。"}, {"cat": "購物", "zh": "Accord香水店", "en": "Accord Jeju", "kr": "accord_jeju", "addr_en": "342 Seohaean-ro, Jeju, South Korea", "addr_kr": "제주시 서해안로 342", "lat": 33.5101736, "lng": 126.4817239, "hours": "週一-四 10:00-19:00；週五-日 12:00-19:00", "price": "依消費", "note": "以MBTI為概念設計的香水與銀鹽飾品選物店。店內有兩隻可愛的橘色貓咪和黃金獵犬，兩層樓各有大型鏡子適合拍照。提供柚子系香氛等濟州特色香水。"}, {"cat": "購物", "zh": "my jeju GIFT", "en": "MY JEJU GIFT", "kr": "마이제주기프트", "addr_en": "35 Sammu-ro, Jeju, South Korea", "addr_kr": "제주시 삼무로 35", "lat": 33.4901323, "lng": 126.4905208, "hours": "11:00-00:00", "price": "依消費", "note": "被稱為「米菲兔天堂」的大型濟州紀念品店，同時販售橘子相關商品、濟州特色雜貨。有提供免稅退稅服務，店員友善。即使非米菲粉絲，也能找到豐富的濟州伴手禮。"}, {"cat": "咖啡廳", "zh": "London Bagel Museum", "en": "London Bagel Museum", "kr": "런던베이글뮤지엄", "addr_en": "85 Dongbok-ro, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 동복로 85", "lat": 33.5535978, "lng": 126.7155939, "hours": "08:00-18:00", "price": "約15,000-20,000韓幣/人", "note": "從首爾紅到濟州的英式鄉村復古貝果名店。推薦：蔥爆奶油起司貝果、磚牆起司貝果、松露蘑菇濃湯。建議下載Catch Table App提前加入候位名單以節省等待時間。面海景致優美，旁邊就是Cafe Layered。"}, {"cat": "咖啡廳", "zh": "Beryl", "en": "Beryl", "kr": "베릴", "addr_en": "79 Hyeopjaegil, Hallim-eup, Jeju, South Korea", "addr_kr": "제주시 한림읍 협재길 79", "lat": 33.3975848, "lng": 126.2425697, "hours": "11:00-18:30", "price": "約10,000-15,000韓幣/人", "note": "隱身在STAY 제주기억民宿一樓的寶藏海景咖啡廳。穿過玄武岩隧道後迎面是正對碧藍海景的玄武岩之窗，空間安靜小眾，緊鄰挾才海灘。飲品精緻，氛圍獨特。"}, {"cat": "咖啡廳", "zh": "Cafe Moalboal", "en": "Cafe Moalboal", "kr": "모알보알카페", "addr_en": "141 Gujwahaean-ro, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 구좌해안로 141", "lat": 33.5595508, "lng": 126.7279497, "hours": "需現場確認", "price": "約10,000-15,000韓幣/人", "note": "位於舊左邑海邊的摩洛哥波西米亞地中海風情咖啡廳。設有彩色地毯、藤編懶人沙發、茅草遮陽傘。店內空間面向大海完全開放，庭院有「任意門」是打卡名點。可在此觀賞海女潛水作業。"}, {"cat": "咖啡廳", "zh": "Layover", "en": "Layover", "kr": "레이오버", "addr_en": "648 Haemajihaean-ro, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 해맞이해안로 648", "lat": 33.5584969, "lng": 126.812404, "hours": "10:30-18:30", "price": "約12,000-18,000韓幣/人", "note": "位於舊左邑近月汀里的現代極簡清水模工業風咖啡廳。擁有兩層樓高的超大透明玻璃窗正對大海，氛圍安靜小眾。推薦：Over Americano（低酸度）。評分4.7分，口碑極佳。"}, {"cat": "咖啡廳", "zh": "休止符(Comma)", "en": "Cafe Comma (Shimpyo)", "kr": "카페쉼표", "addr_en": "1732 Hyeopjae-ri, Hallim-eup, Jeju, South Korea", "addr_kr": "제주시 한림읍 협재리 1732", "lat": 33.3951682, "lng": 126.2418996, "hours": "09:00-21:00", "price": "約12,000-15,000韓幣/人", "note": "位於挾才海邊，正對飛揚島。三層樓建築：1樓落地玻璃窗、2樓開放式窗景、頂樓有茅草帳篷與吊床座位。躺在吊床上看蒂芬妮藍漸層海色是一絕。附設輕食（豬肉熱狗可頌）。"}, {"cat": "咖啡廳", "zh": "Cafe MouMoon", "en": "Cafe MouMoon", "kr": "무문카페", "addr_en": "460 Haemajihaean-ro, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 해맞이해안로 460 2층", "lat": 33.5557541, "lng": 126.7957656, "hours": "10:00-20:30", "price": "約12,000-18,000韓幣/人", "note": "月汀里海灘正對面的景觀烘焙咖啡廳，需搭電梯上樓。巨大橫向玻璃窗將月汀里「果凍海」盡收眼底。販售現烤可頌（抹茶、芒果等口味）、麵包點心。座位多，空間寬敞。"}, {"cat": "咖啡廳", "zh": "Team Blow", "en": "Team Blow", "kr": "팀블로우", "addr_en": "2474-3 Aewol-ri, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 애월리 2474-3", "lat": 33.4608757, "lng": 126.3108077, "hours": "08:00-20:00", "price": "約12,000-15,000韓幣/人", "note": "涯月邑海邊公路旁的白色獨棟咖啡廳，戶外崖邊草地設有桌椅。室內大片落地窗正對蔚藍海岸線，是著名的「人生咖啡廳」。非付費顧客不得在戶外拍照（請遵守規定）。"}, {"cat": "咖啡廳", "zh": "Colline Jeju", "en": "Colline Jeju", "kr": "콜린제주", "addr_en": "24-8 Aewol-ro 1-gil, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 애월로1길 24-8", "lat": 33.4628728, "lng": 126.3104255, "hours": "需現場確認", "price": "約15,000-25,000韓幣/人", "note": "涯月邑的三層樓大型溫室花園風咖啡廳，設有歐式噴泉。招牌：熟成柿子冰（堆滿整顆柿子的巨大冰品，2-3人份量）。另有黑豬肉燉飯等料理。頂樓可俯瞰涯月海景。評分4.4分。"}, {"cat": "咖啡廳", "zh": "Cafe Layered 濟州店", "en": "Cafe Layered Jeju", "kr": "카페레이어드 제주점", "addr_en": "85 Dongbok-ro, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 동복로 85 주1동 1층", "lat": 33.5535978, "lng": 126.7155939, "hours": "08:00-18:00", "price": "約15,000-20,000韓幣/人", "note": "緊鄰London Bagel Museum的英式鄉村復古風甜點咖啡廳。招牌：小狗造型紅絲絨蛋糕、泰迪熊瓶裝伯爵奶茶、各式英式司康。店面精緻可愛，是拍照打卡熱點。評分4.4分。"}, {"cat": "咖啡廳", "zh": "Haejigae", "en": "Haejigae Cafe", "kr": "해지개", "addr_en": "52 Aewolbukseo-gil, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 애월북서길 52", "lat": 33.4642136, "lng": 126.3089572, "hours": "09:00-21:00", "price": "約12,000-18,000韓幣/人", "note": "涯月邑看日落的殿堂級咖啡廳（評分4.8分，口碑極佳）。設有東南亞度假風茅草遮陽傘，招牌濟州橘子造型麵包外皮酥軟、內餡香甜。傍晚時分最美，烘焙品容易售罄建議早到。"}, {"cat": "咖啡廳", "zh": "Haru Film Aewol", "en": "Haru Film Aewol", "kr": "하루필름 애월점", "addr_en": "672 Aewolhaean-ro, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 애월해안로 672 1층", "lat": 33.4812421, "lng": 126.3741549, "hours": "11:00-18:30", "price": "約8,000-12,000韓幣/人", "note": "涯月邑海線上結合四格自拍館與咖啡的複合空間。奶油藍白色復古路標看板是全網瘋傳的打卡點。適合路過涯月時順道打卡拍照。評分一般(3.2分)，以拍照為主要目的。"}, {"cat": "咖啡廳", "zh": "SLOWBOAT Atelier", "en": "SLOWBOAT Atelier", "kr": "슬로우보트 아틀리에", "addr_en": "330 Hagwi 1-ri, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 하귀1리 330", "lat": 33.4900871, "lng": 126.4144874, "hours": "10:00-18:00", "price": "約10,000-15,000韓幣/人", "note": "涯月海線附近的「書本主題」獨立咖啡館。挑高清水模建築，大量深色木質家具。2樓橫幅觀景窗正對礁岩大海。員工能說英文。推薦：Slowboat Dark Blend手沖咖啡。評分4.6分，店內有貓咪！"}, {"cat": "咖啡廳", "zh": "Lazy Pump", "en": "Lazy Pump", "kr": "레이지펌프", "addr_en": "2578-5 Aewol-ri, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 애월리 2578-5", "lat": 33.4660037, "lng": 126.3097954, "hours": "09:00-20:00", "price": "約10,000-15,000韓幣/人", "note": "廢棄抽水站改建的工業荒涼風咖啡廳，保留原始紅磚與斑駁混凝土。室內「相框式觀景窗」是熱門拍照點，戶外草地有一台長滿植物的廢舊鋼琴與海景相映成趣。評分4.3分，口碑不錯。"}, {"cat": "咖啡廳", "zh": "Mongle", "en": "Mongle (Woljeongri)", "kr": "몽글 월정리점", "addr_en": "541 Woljeong-ri, Gujwa-eup, Jeju, South Korea", "addr_kr": "제주시 구좌읍 월정리 541", "lat": 33.555769, "lng": 126.7957465, "hours": "09:00-18:00", "price": "約5,000-10,000韓幣/份餅乾", "note": "月汀里的雲朵夾心餅乾專賣店，以招牌雲朵插畫標誌爆紅。餅乾酥脆、療癒可愛，可混搭多種口味，是打卡伴手禮首選。只接受現金或信用卡（無行動支付）。評分4.7分超高。"}, {"cat": "咖啡廳", "zh": "Gyulkkot Darak", "en": "Cafe Gyulkkot Darak", "kr": "카페 귤꽃다락", "addr_en": "34 Ieodo-ro 1027beon-gil, Seogwipo, South Korea", "addr_kr": "서귀포시 이어도로1027번길 34", "lat": 33.2464249, "lng": 126.5225977, "hours": "10:00-18:40", "price": "約12,000-18,000韓幣/人", "note": "隱身在西歸浦南線柑橘園裡的復古咖啡廳。店內隨處可見橘子裝飾，戶外有大片橘子樹步道，如夢似幻的「秘密花園」。必試：橘子氣泡飲、橘子檸檬蛋糕。評分4.5分。"}, {"cat": "咖啡廳", "zh": "Delmoondo", "en": "Delmoondo", "kr": "델문도", "addr_en": "519-10 Johamseohaean-ro, Jocheon-eup, Jeju, South Korea", "addr_kr": "제주시 조천읍 조함해안로 519-10", "lat": 33.5437787, "lng": 126.6688353, "hours": "06:00-24:00", "price": "約10,000-15,000韓幣/人", "note": "咸德海灘旁的超大型臨海咖啡廳，以超長營業時間（06:00-24:00）著稱。整棟建築建在玄武岩上，戶外露台座位腳下就是Tiffany藍色海水。附設烘焙甜點。"}, {"cat": "咖啡廳", "zh": "Udo Dabang(牛島茶房)", "en": "Udo Dabang", "kr": "안녕 육지사람 (우도다방)", "addr_en": "Udo-myeon, Jeju, South Korea", "addr_kr": "제주시 우도면 우도리", "lat": 33.5147373, "lng": 126.9571737, "hours": "需現場確認", "price": "約8,000-15,000韓幣/人", "note": "牛島上指標性的復古海島風情Brunch咖啡廳，常用名「你好，陸地人」(안녕，육지사람)。招牌：花生冰淇淋、花生餅乾（使用牛島特產花生）。環島騎行時的絕佳休息點，氛圍充滿異國情調。"}, {"cat": "咖啡廳", "zh": "MUROI本店", "en": "MUROI (Andeok)", "kr": "무로이", "addr_en": "Andeok-myeon, Seogwipo, South Korea", "addr_kr": "서귀포시 안덕면", "lat": 33.3074121, "lng": 126.3365942, "hours": "10:30-20:00", "price": "約15,000-25,000韓幣/人", "note": "濟州島東門市場附近有分店，此為安德面工業風現代主店。招牌：千層酥扁可頌（脆皮鍋巴可頌）、濟州乾橘片特色糕點。包裝精美，很適合購買作伴手禮。"}, {"cat": "咖啡廳", "zh": "Abebe Bakery", "en": "Abebe Bakery Jeju", "kr": "아베베빵집 제주", "addr_en": "4 Dongmun-ro 6-gil, Jeju, South Korea", "addr_kr": "제주시 동문로6길 4", "lat": 33.5126576, "lng": 126.5287951, "hours": "09:30-20:30", "price": "約4,500-8,000韓幣/個", "note": "東門市場旁黑色外觀的排隊名店。主打濟州柑橘冰奶油麵包、牛島花生奶油多拿滋，咬下爆出冰涼鮮奶油。品項豐富（抹茶、巧克力、花生等），份量大且飽足感強。評分4.4分。"}, {"cat": "咖啡廳", "zh": "umu布丁(翰林邑店)", "en": "Umu Pudding (Hallim)", "kr": "우무 한림점", "addr_en": "542-1 Hallim-ro, Hallim-eup, Jeju, South Korea", "addr_kr": "제주시 한림읍 한림로 542-1", "lat": 33.4059283, "lng": 126.2564727, "hours": "00:00-20:00；21:00-24:00", "price": "約6,800韓幣/杯", "note": "濟州現象級文青甜點品牌，以海女採集的天草海藻熬製手工布丁（不含人工凝固劑）。口感入口即化。口味：原味牛奶、抹茶、巧克力、花生、柑橘。純白簡約店面拍照出片。評分3.9分（服務待改善）。"}, {"cat": "咖啡廳", "zh": "umu布丁(市區店)", "en": "Umu Pudding (Jeju City)", "kr": "우무 2호점", "addr_en": "Jeju City, South Korea", "addr_kr": "제주시 중앙로", "lat": 33.5098305, "lng": 126.5233913, "hours": "09:00-20:00", "price": "約6,800韓幣/杯", "note": "umu布丁的濟州市區分店，鄰近東門市場，交通便利。同樣販售海藻手工布丁，是去東門市場時可順道前往的甜點選擇。"}, {"cat": "美食", "zh": "崖月帶魚 暗行御史", "en": "Aewol Galchi Amhaengeosa", "kr": "애월갈치 암행어사", "addr_en": "Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 애월해안로 400", "lat": 33.4669641, "lng": 126.320657, "hours": "11:00-21:30", "price": "約30,000-50,000韓幣/人", "note": "位於涯月海邊的排隊帶魚名店。招牌：熟成泡菜燉帶魚，用燉得入味的酸泡菜包裹新鮮肥美帶魚，鮮嫩無腥味。附贈多款韓式小菜。面海景色絕佳，用餐環境舒適。"}, {"cat": "美食", "zh": "梨花不雞爪1979", "en": "Ihwa Dakbal 1979", "kr": "이화닭발1979", "addr_en": "Yeondong, Jeju, South Korea", "addr_kr": "제주시 연동", "lat": 33.4879539, "lng": 126.4921986, "hours": "需現場確認", "price": "約15,000-20,000韓幣/人", "note": "辣炒雞爪名店，是濟州市區夜間宵夜的人氣選擇。電話：+82 64-749-1979。"}, {"cat": "美食", "zh": "熏陶 崖月黑豬肉", "en": "Hoondo Aewol Black Pork", "kr": "훈도 애월 흑돼지 전문점", "addr_en": "37 Aewol-ri, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 애월리 37 1층", "lat": 33.4622121, "lng": 126.3123446, "hours": "11:00-23:00", "price": "約30,000-50,000韓幣/人", "note": "評分4.9分的頂級黑豬肉烤肉店（超過1,357則評論）。主打熟成厚切黑豬肉，員工全程桌邊代烤至外皮焦酥內裡粉嫩。豐富醬料與小菜搭配。面海景色，是崖月一帶最推薦的黑豬肉選擇。"}, {"cat": "美食", "zh": "大路(큰길)", "en": "Keungil Restaurant", "kr": "큰길", "addr_en": "Andeok-myeon, Seogwipo, South Korea", "addr_kr": "서귀포시 안덕면 일주동로 6911", "lat": 33.2858257, "lng": 126.3655414, "hours": "需現場確認", "price": "約10,000-15,000韓幣/人", "note": "安德面在地豬肉湯麵名店。電話：+82 64-792-0661。"}, {"cat": "美食", "zh": "橘當利(咖啡廳+黑豬肉)", "en": "Gyuldangri", "kr": "귤당리", "addr_en": "Hallim-eup, Jeju, South Korea", "addr_kr": "제주시 한림읍 한림로 359-45", "lat": 33.3630634, "lng": 126.196218, "hours": "10:00-19:00", "price": "約15,000-30,000韓幣/人", "note": "結合濟州橘子主題咖啡廳與黑豬肉料理的特色餐廳，將濟州招牌黑豬肉與在地柑橘風味創意融合。泥土色外觀溫馨可愛。"}, {"cat": "美食", "zh": "DOGALBI 公港店", "en": "Dogalbi Airport Branch", "kr": "도갈비 공항점", "addr_en": "Dodu, Jeju, South Korea", "addr_kr": "제주시 도두로 155", "lat": 33.4919543, "lng": 126.4976412, "hours": "12:00-22:00", "price": "約25,000-40,000韓幣/人", "note": "韓式烤牛排骨料理，鄰近濟州機場，適合飛機前後的餐點。"}, {"cat": "美食", "zh": "桂內吉島西歸浦中文黑豬肉", "en": "Gwenegitdo Jungmun Black Pork", "kr": "귀네깃도 서귀포 중문 흑돼지", "addr_en": "Sangyedong, Seogwipo, South Korea", "addr_kr": "서귀포시 상예동 200-1", "lat": 33.2583323, "lng": 126.40761, "hours": "11:00-23:00", "price": "約30,000-50,000韓幣/人", "note": "位於中文旅遊區的在地黑豬肉餐廳，評價好、品質穩定。"}, {"cat": "美食", "zh": "Suil Chicken", "en": "Suil Chicken", "kr": "수일통닭", "addr_en": "Yeondong, Jeju, South Korea", "addr_kr": "제주시 연동", "lat": 33.4880976, "lng": 126.4840365, "hours": "需現場確認", "price": "約15,000-25,000韓幣/人", "note": "濟州市區人氣炸雞烤肉店。"}, {"cat": "美食", "zh": "黃金鰻魚 濟州本店", "en": "Hwanggeum Jangeo (Jeju Main)", "kr": "황금장어 제주본점", "addr_en": "Yeondong, Jeju, South Korea", "addr_kr": "제주시 연동 294-55", "lat": 33.4837384, "lng": 126.4846085, "hours": "11:00-23:00", "price": "約30,000-50,000韓幣/人", "note": "濟州市區知名烤鰻魚專門店，以鰻魚料理聞名，是喜愛海鮮的旅客推薦選擇。"}, {"cat": "美食", "zh": "帶魚館 涯月海岸道路店", "en": "Galchigwan Aewol", "kr": "갈치관 제주애월본점", "addr_en": "686 Aewolhaean-ro, Aewol-eup, Jeju, South Korea", "addr_kr": "제주시 애월읍 애월해안로 686", "lat": 33.4819725, "lng": 126.3752439, "hours": "10:00-21:00", "price": "約30,000-50,000韓幣/人", "note": "評分4.7分的帶魚料理名店，位於涯月海岸道路。推薦：新鮮烤帶魚（外皮酥脆，醃製恰到好處）、鮑魚粥。面海景色絕美，側菜豐富，附帶生魚片等多樣海鮮小菜。"}, {"cat": "美食", "zh": "玫瑰豬腳", "en": "Jangmi Jokbal", "kr": "장미족발", "addr_en": "68 Wonnohyeong-ro, Jeju, South Korea", "addr_kr": "제주시 노형동 937-10 원노형로 68 1층", "lat": 33.4827055, "lng": 126.4846386, "hours": "需現場確認", "price": "約20,000-30,000韓幣/人", "note": "濟州市區老衡洞豬腳名店，Google地圖收錄有限，建議提前確認營業時間。"}, {"cat": "美食", "zh": "宇進解酒湯", "en": "Ujin Haejangguk", "kr": "우진해장국", "addr_en": "11 Seosa-ro, Jeju, South Korea", "addr_kr": "제주시 서사로 11", "lat": 33.511505, "lng": 126.5200319, "hours": "06:00-22:00", "price": "約10,000-15,000韓幣/人", "note": "濟州最傳奇的排隊名店（9,400+評論，評分4.1分）。招牌：蕨菜解酒湯，黑豬肉+骨頭+濟州蕨菜長時間熬煮成濃稠肉羹，口感滑順回甘。建議06:00-07:00一開門即到，或直接外帶（速度比內用快）。排隊常態1-2小時。"}, {"cat": "美食", "zh": "鹽Bachi順伊家", "en": "Sogeumbachi Sooninae", "kr": "소금바치 순이네", "addr_en": "Seongsan-eup, Jeju, South Korea", "addr_kr": "제주시 성산읍 성산리", "lat": 33.5035471, "lng": 126.9127463, "hours": "09:30-19:30（週四公休）", "price": "約20,000-30,000韓幣/人", "note": "城山日出峰附近的超人氣排隊名店。招牌：辣炒章魚素麵（돌문어볶음），Q彈章魚+芝麻葉+下面藏著素麵，醬汁下飯。週四公休，前往前請確認。"}, {"cat": "美食", "zh": "山地醒酒湯", "en": "Sanji Haejangguk", "kr": "산지해장국", "addr_en": "Jeju, South Korea", "addr_kr": "제주시 동문로 (동문시장 인근)", "lat": 33.5163515, "lng": 126.5285668, "hours": "06:00-14:30（週三公休）", "price": "約8,000-12,000韓幣/人", "note": "濟州在地人最愛的早餐/解酒湯名店，位於東門市場附近。主打：內臟醒酒湯、牛血解酒湯，料給得非常滿，湯頭濃郁帶微辣。06:00起開門，下午即可能售罄，建議早去。"}, {"cat": "美食", "zh": "城山雙魚座", "en": "Seongsan Mulgogijari", "kr": "성산물고기자리", "addr_en": "Seongsan-eup, Jeju, South Korea", "addr_kr": "제주시 성산읍 성산리", "lat": 33.4611885, "lng": 126.9333042, "hours": "12:00-21:00（週一公休）", "price": "約30,000-50,000韓幣/人", "note": "城山日出峰附近的在地生魚片海鮮餐廳，主打當季現撈漁獲。生魚片拼盤（鯖魚、帶魚）切得厚實無腥味，附贈豐富韓式海鮮小菜。週一公休請注意。"}, {"cat": "美食", "zh": "新中山間黑豬肉", "en": "Shinjungsangan Black Pork", "kr": "신중산간흑돼지", "addr_en": "Yeondong, Jeju, South Korea", "addr_kr": "제주시 연동", "lat": 33.4858688, "lng": 126.4850761, "hours": "11:00-23:00", "price": "約30,000-50,000韓幣/人", "note": "濟州市區蓮洞的黑豬肉名店，鄰近君悅酒店與新羅免稅店。主打厚切高品質黑豬肉，配上特製祕製醬料，肉質扎實香氣足。是在地人和旅客都推薦的選擇。"}, {"cat": "美食", "zh": "Mukdol麵", "en": "Mukdol Noodles", "kr": "먹돌", "addr_en": "Jeju, South Korea", "addr_kr": "제주시 도두로 155", "lat": 33.5036339, "lng": 126.4979845, "hours": "08:00-20:00", "price": "約10,000-15,000韓幣/人", "note": "鄰近濟州機場的韓式傳統麵食名店。主打黑豬肉湯麵與海鮮湯麵，份量扎實、湯頭濃郁。可一人食，適合剛下飛機或準備去機場前獨自填飽肚子。"}, {"cat": "美食", "zh": "Baren帶魚 濟州機場本店", "en": "Bareun Galchi Airport", "kr": "바른갈치 제주공항본점", "addr_en": "Jeju, South Korea", "addr_kr": "제주시 도두로 155", "lat": 33.50202, "lng": 126.5049281, "hours": "09:30-20:00", "price": "約20,000-30,000韓幣/人", "note": "鄰近機場的帶魚料理名店，最大特色是提供完全無骨（去刺）的辣燉帶魚，且有一人份套餐，是一個人也能輕鬆享用濟州帶魚料理的好選擇。"}, {"cat": "美食", "zh": "GOBDEULRAK咸德店", "en": "Gobdeulrak Hamdeok", "kr": "곱들락 함덕점", "addr_en": "Hamdeok-ri, Jocheon-eup, Jeju, South Korea", "addr_kr": "제주시 조천읍 함덕리", "lat": 33.5394514, "lng": 126.6704512, "hours": "12:00-15:00；17:00-22:00（週二公休）", "price": "約30,000-50,000韓幣/人", "note": "咸德海邊附近的優質黑豬肉烤肉店，厚切炭烤後香氣與肉汁表現突出，評價好口碑佳。中間休息2小時，需注意用餐時段。"}, {"cat": "美食", "zh": "明浩豚肉 機場店", "en": "Myeongho Dotgalbi Airport", "kr": "명호돗갈비 공항점", "addr_en": "2 Doduhangseo 7-gil, Jeju, South Korea", "addr_kr": "제주시 도두항서7길 2 1층", "lat": 33.5032474, "lng": 126.4635133, "hours": "12:00-21:00", "price": "約20,000-35,000韓幣/人", "note": "鄰近濟州機場的排隊豬排骨烤肉名店（돗갈비）。肉質紮實有彈性，烤過後外皮微焦，配特製沾醬非常過癮。非常適合下飛機後的第一餐或上機前的最後一餐。"}, {"cat": "美食", "zh": "宮書體帶魚 塔洞本店", "en": "Gungseoche Tapdong", "kr": "궁서체 탑동본점", "addr_en": "6 Tapdong-ro 11-gil, Jeju, South Korea", "addr_kr": "제주시 탑동로11길 6 2층", "lat": 33.5168477, "lng": 126.5169677, "hours": "10:00-22:00", "price": "約30,000-50,000韓幣/人", "note": "位於濟州市區塔洞的現代大氣海鮮名店。招牌：巨型無刺燉帶魚、整條烤帶魚。套餐附贈豐富海鮮小菜與生魚片。適合家庭或多人聚餐。"}, {"cat": "美食", "zh": "中門保末刀切麵", "en": "Jungmun Bomal Kalguksu", "kr": "중문보말칼국수", "addr_en": "190 Cheonjeyeon-ro, Seogwipo, South Korea", "addr_kr": "서귀포시 천제연로 190", "lat": 33.2515765, "lng": 126.4251078, "hours": "08:00-16:00（週二公休）", "price": "約10,000-15,000韓幣/人", "note": "南部中文旅遊區的海螺料理名店。招牌：用海螺（보말）熬煮的綠色濃郁湯頭刀切麵與海螺粥，充滿海洋鮮甜。下午可能售罄，建議早去。"}, {"cat": "美食", "zh": "摹瑟浦碼頭食堂", "en": "Budu Sikdang (Moseulpo)", "kr": "부두식당", "addr_en": "62 Hamo Harbor-ro, Daejeong-eup, Seogwipo, South Korea", "addr_kr": "서귀포시 대정읍 하모항구로 62", "lat": 33.2189259, "lng": 126.2510054, "hours": "10:00-21:30（週四17:00開始）", "price": "約20,000-40,000韓幣/人", "note": "開在西南端摹瑟浦港口邊的老字號海鮮餐廳。以新鮮當季生魚片（秋冬鰤魚/大頭魚、春夏鯖魚）及鮮美辣魚湯聞名。是在地人最愛的私房海產店。"}, {"cat": "美食", "zh": "Fizz漢堡 老衡店", "en": "Fizz Burger Nohyeong", "kr": "피즈버거 노형점", "addr_en": "6 Nohyeong 10-gil, Jeju, South Korea", "addr_kr": "제주시 노형10길 6 1층", "lat": 33.4836587, "lng": 126.4776305, "hours": "需現場確認", "price": "約15,000-25,000韓幣/人", "note": "原本在崖月邑超火紅的手工美式漢堡店在市區老衡洞的分店。現點現做厚實牛肉堡，特製花生醬或起司，麵包烤得香酥，深受年輕人喜愛。"}, {"cat": "美食", "zh": "咸德鯖魚包飯", "en": "Hamdeok Godeungeo Ssambap", "kr": "함덕고등어쌈밥", "addr_en": "Hamdeok-ri, Jocheon-eup, Jeju, South Korea", "addr_kr": "제주시 조천읍 함덕리", "lat": 33.5425125, "lng": 126.6696539, "hours": "09:00-21:30", "price": "約20,000-30,000韓幣/人", "note": "咸德海水浴場對面的排隊包飯名店。招牌：熟成泡菜燉鯖魚包飯，用燉得軟爛的酸泡菜包裹肥美無腥味的鯖魚，搭配新鮮生菜包著吃。附贈香噴噴鮑魚釜飯。"}, {"cat": "美食", "zh": "咸德 Geuttae那家", "en": "Hamdeok Geuttae Geujip", "kr": "함덕 그때그집", "addr_en": "Hamdeok-ri, Jocheon-eup, Jeju, South Korea", "addr_kr": "제주시 조천읍 함덕리", "lat": 33.5427934, "lng": 126.6646961, "hours": "需現場確認", "price": "約30,000-50,000韓幣/人", "note": "咸德海邊附近的黑豬肉名店，特色是送上桌前先進行木炭初烤，把肉汁鎖緊。黑豬肉泡菜鍋也非常受老饕喜愛。"}, {"cat": "美食", "zh": "熟成到 中文店", "en": "Sukseongdo Jungmun", "kr": "숙성도 중문점", "addr_en": "Sangyedong, Seogwipo, South Korea", "addr_kr": "서귀포시 상예동 200-1", "lat": 33.2631434, "lng": 126.3955603, "hours": "11:30-22:00", "price": "約40,000-60,000韓幣/人", "note": "被譽為濟州島烤肉界頂流天花板！位於南部中文旅遊區。採獨家低溫水冷熟成技術，黑豬肉軟嫩到不可思議。提供魚醬、明太子等豐富沾醬，雖排隊時間長但絕對值得。"}, {"cat": "美食", "zh": "Dotdam", "en": "DOTDAM", "kr": "돗담", "addr_en": "293-55 Yeondong, Jeju, South Korea", "addr_kr": "제주시 연동 293-55", "lat": 33.4864808, "lng": 126.4943768, "hours": "12:00-22:00（週一公休）", "price": "約30,000-50,000韓幣/人", "note": "濟州市區蓮洞的精緻現代黑豬肉烤肉店，走高質感路線，提供專人桌邊代烤服務，把外皮烤得焦香酥脆，是市區聚餐熱門首選。"}, {"cat": "美食", "zh": "Sumsonai 島小夥(牛島)", "en": "Sumsonai", "kr": "섬소나이", "addr_en": "Udo-myeon, Jeju, South Korea", "addr_kr": "제주시 우도면 연평리 814", "lat": 33.5133865, "lng": 126.9574805, "hours": "10:00-17:00", "price": "約18,000-28,000韓幣/人", "note": "牛島下古水洞海灘正對面的排隊名店。主打：鮑魚海鮮拉麵（白湯/紅湯）、海藻脆皮披薩，麵條與餅皮中揉入牛島特產海藻，鋪滿新鮮鮑魚。小紅書爆紅打卡店。"}, {"cat": "美食", "zh": "On-Off(牛島)", "en": "On-Off", "kr": "온오프", "addr_en": "Udo-myeon, Jeju, South Korea", "addr_kr": "제주시 우도면", "lat": 33.5129211, "lng": 126.9615353, "hours": "11:00-16:00", "price": "約20,000-30,000韓幣/人", "note": "牛島海邊的黑豬肉炸豬排專賣店。招牌：經典芝士豬排、羅勒芝士豬排，炸得酥脆多汁，附上濟州橘子醬。窗外海景絕美。建議線上預約。"}, {"cat": "美食", "zh": "UDORO 93(牛島)", "en": "UDORO 93", "kr": "우도로93", "addr_en": "Udo-myeon, Jeju, South Korea", "addr_kr": "제주시 우도면", "lat": 33.5008262, "lng": 126.9538698, "hours": "10:00-17:00", "price": "約18,000-28,000韓幣/人", "note": "牛島內陸的溫馨特色小店。招牌：番茄蝦仁烏龍麵（湯頭濃郁香醇）、避風塘風味炸蝦（大隻酥脆）。適合想避開人潮嘗試獨特口味的旅客。"}, {"cat": "美食", "zh": "金點城山黑豬肉", "en": "Geumdot Seongsan Black Pork", "kr": "금돗 성산흑돼지", "addr_en": "234-16 Seongsan-ri, Seongsan-eup, Seogwipo, South Korea", "addr_kr": "서귀포시 성산읍 성산리 234-16 1층", "lat": 33.4652669, "lng": 126.932507, "hours": "11:00-23:00", "price": "約30,000-50,000韓幣/人", "note": "評分4.9分超高（3,253則評論）！城山日出峰附近頂級黑豬肉烤肉，肉質多汁鮮嫩、小菜可無限續。人氣極旺需排隊。注意：部分評論指出店家提供免費福利換取5星好評，建議自行判斷。電話：+82 10-7553-8655"}, {"cat": "美食", "zh": "銅盆王排骨", "en": "Yangpun Wanggalbi", "kr": "양푼 왕갈비", "addr_en": "21 Sudeok 7-gil, Nohyeong-dong, Jeju, South Korea", "addr_kr": "제주시 노형동 수덕7길 21", "lat": 33.4860118, "lng": 126.4753058, "hours": "週一-五 11:30-14:00、17:00-22:00；週六-日 17:00-22:00", "price": "約20,000-35,000韓幣/人", "note": "濟州市區老衡洞的傳統韓式銅盆燉豬排骨，湯頭濃郁，可用剩餘湯底炒飯。週末僅供晚餐，建議提前確認。電話：+82 64-746-3663"}];
+
+// ── MAP ──────────────────────────────────────
+const map = L.map("map", { center:[33.38,126.55], zoom:11, zoomControl:true });
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
+  maxZoom: 19
+}).addTo(map);
+
+// ── STATE ────────────────────────────────────
+let activeCats = new Set(["交通","住宿","景點","購物","咖啡廳","美食"]);
+let activeZone = "all";
+let selectedIdx = null;
+let leafletMarkers = [];
+const popupEl = document.getElementById("my-popup");
+const isMobile = () => window.innerWidth <= 768;
+
+// ── SIDEBAR ───────────────────────────────────
+function toggleSidebar() {
+  document.getElementById("sidebar").classList.toggle("open");
+  document.getElementById("overlay").classList.toggle("show");
+}
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
+
+// ── ZONE ─────────────────────────────────────
+function getZone(lat, lng) {
+  if (lng > 126.88) return "udo";
+  if (lat > 33.47 && lng > 126.45 && lng < 126.62) return "north";
+  if (lng > 126.65) return "east";
+  if (lng < 126.43) return "west";
+  return "south";
+}
+function isVisible(p) {
+  if (!activeCats.has(p.cat)) return false;
+  if (activeZone === "all") return true;
+  return getZone(p.lat, p.lng) === activeZone;
+}
+
+// ── POPUP ─────────────────────────────────────
+function closePopup() {
+  popupEl.style.display = "none";
+  if (selectedIdx !== null) { selectedIdx = null; renderMarkers(); renderList(); }
+}
+
+function showPopup(idx) {
+  const p = DATA[idx];
+  const col = COLORS[p.cat];
+  const em  = EMOJIS[p.cat];
+  const gmapUrl  = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.kr + " " + p.addr_kr);
+  const naverUrl = "https://map.naver.com/v5/search/" + encodeURIComponent(p.kr);
+
+  const drag = isMobile() ? "<div class=\"popup-drag\"></div>" : "";
+
+  popupEl.innerHTML = drag +
+    "<div class=\"popup-header\">" +
+      "<div><div class=\"popup-cat\" style=\"color:" + col + "\">" + em + " " + p.cat + "</div>" +
+      "<div class=\"popup-name\">" + p.zh + "</div>" +
+      "<div class=\"popup-kr\">" + p.kr + " · " + p.en + "</div></div>" +
+      "<button class=\"popup-close-btn\" onclick=\"closePopup()\">✕</button>" +
+    "</div>" +
+    "<div class=\"popup-row\"><b>⏰</b><span>" + p.hours + "</span></div>" +
+    "<div class=\"popup-row\"><b>💰</b><span>" + p.price + "</span></div>" +
+    "<div class=\"popup-addr-block\">" +
+      "<div class=\"addr-label\">📍 地址</div>" +
+      "<div style=\"margin-bottom:3px\">" + p.addr_kr + "</div>" +
+      "<div style=\"color:#718096\">" + p.addr_en + "</div>" +
+    "</div>" +
+    "<div class=\"popup-note\">" + p.note + "</div>" +
+    "<div class=\"popup-btns\">" +
+      "<a class=\"popup-btn btn-gmap\" href=\"" + gmapUrl + "\" target=\"_blank\">🗺 Google Maps</a>" +
+      "<a class=\"popup-btn btn-naver\" href=\"" + naverUrl + "\" target=\"_blank\">🟢 Naver Map</a>" +
+    "</div>";
+
+  popupEl.style.display = "block";
+
+  if (!isMobile()) {
+    // Desktop: position near marker
+    const mapDiv = document.getElementById("map");
+    const rect  = mapDiv.getBoundingClientRect();
+    const point = map.latLngToContainerPoint([p.lat, p.lng]);
+    let left = rect.left + point.x + 18;
+    let top  = rect.top  + point.y - 20;
+    requestAnimationFrame(() => {
+      const pw = popupEl.offsetWidth, ph = popupEl.offsetHeight;
+      if (left + pw > window.innerWidth  - 10) left = rect.left + point.x - pw - 18;
+      if (top  + ph > window.innerHeight - 10) top  = window.innerHeight - ph - 10;
+      if (top  < rect.top + 10) top  = rect.top + 10;
+      if (left < rect.left + 10) left = rect.left + 10;
+      popupEl.style.left = left + "px";
+      popupEl.style.top  = top  + "px";
+    });
+  }
+}
+
+// ── MARKERS ──────────────────────────────────
+function makeIcon(cat, selected) {
+  const col  = COLORS[cat];
+  const size = selected ? 20 : 13;
+  const bdr  = selected ? 3 : 2;
+  return L.divIcon({
+    className: "",
+    html: "<div style=\"width:" + size + "px;height:" + size + "px;background:" + col + ";border:" + bdr + "px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer;\"></div>",
+    iconSize:   [size, size],
+    iconAnchor: [size/2, size/2]
+  });
+}
+function renderMarkers() {
+  leafletMarkers.forEach(({marker}) => map.removeLayer(marker));
+  leafletMarkers = [];
+  DATA.forEach((p, i) => {
+    if (!isVisible(p)) return;
+    const isSel = selectedIdx === i;
+    const marker = L.marker([p.lat, p.lng], { icon: makeIcon(p.cat, isSel), zIndexOffset: isSel ? 1000 : 0 });
+    marker.on("click", e => { L.DomEvent.stopPropagation(e); selectPlace(i); });
+    marker.addTo(map);
+    leafletMarkers.push({marker, idx: i});
+  });
+}
+
+map.on("click", () => closePopup());
+
+// ── SELECT ────────────────────────────────────
+function selectPlace(idx) {
+  selectedIdx = idx;
+  renderMarkers();
+  renderList();
+  showPopup(idx);
+  const p = DATA[idx];
+  map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14), {animate: true, duration: 0.5});
+  document.querySelectorAll(".place-item.selected").forEach(el =>
+    el.scrollIntoView({behavior: "smooth", block: "nearest"})
+  );
+  if (isMobile()) closeSidebar();
+}
+
+// ── LIST ──────────────────────────────────────
+function renderList() {
+  const list = document.getElementById("place-list");
+  const visible = DATA.filter(p => isVisible(p));
+  document.getElementById("list-count").textContent = visible.length + " 個";
+  document.getElementById("visible-count").textContent = visible.length + " 個地點";
+  if (!visible.length) { list.innerHTML = "<div class=\"no-results\">沒有符合的地點</div>"; return; }
+  const grouped = {};
+  DATA.forEach((p, i) => { if (!isVisible(p)) return; (grouped[p.cat] = grouped[p.cat]||[]).push({p,i}); });
+  const order = ["交通","住宿","景點","購物","咖啡廳","美食"];
+  let html = "";
+  order.forEach(cat => {
+    if (!grouped[cat]) return;
+    html += "<div class=\"cat-header\" style=\"color:" + COLORS[cat] + "\">" + EMOJIS[cat] + " " + cat + " (" + grouped[cat].length + ")</div>";
+    grouped[cat].forEach(({p,i}) => {
+      html += "<div class=\"place-item" + (selectedIdx===i?" selected":"") + "\" onclick=\"selectPlace(" + i + ")\">" +
+        "<div class=\"pname\"><span class=\"dot\" style=\"background:" + COLORS[p.cat] + "\"></span>" + p.zh + "</div>" +
+        "<div class=\"psub\">" + p.en + "</div>" +
+        "<div class=\"phours\">⏰ " + p.hours + "</div>" +
+        "<div class=\"pprice\">💰 " + p.price + "</div></div>";
+    });
+  });
+  list.innerHTML = html;
+}
+
+// ── FILTERS ───────────────────────────────────
+function toggleCat(btn) {
+  const cat = btn.dataset.cat;
+  if (activeCats.has(cat)) {
+    if (activeCats.size === 1) return;
+    activeCats.delete(cat); btn.classList.remove("active");
+  } else {
+    activeCats.add(cat); btn.classList.add("active");
+  }
+  closePopup(); renderMarkers(); renderList();
+}
+
+const ZONE_BOUNDS = {
+  all:   [[33.10,126.10],[33.62,127.05]],
+  north: [[33.47,126.45],[33.57,126.62]],
+  east:  [[33.37,126.65],[33.57,127.00]],
+  west:  [[33.19,126.12],[33.57,126.43]],
+  south: [[33.19,126.30],[33.47,126.80]],
+  udo:   [[33.48,126.88],[33.55,126.98]]
+};
+function setZone(btn) {
+  document.querySelectorAll(".zone-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  activeZone = btn.dataset.zone;
+  closePopup(); renderMarkers(); renderList();
+  document.getElementById("list-title").textContent =
+    btn.textContent === "全部" ? "所有地點" : btn.textContent + "地點";
+  map.fitBounds(ZONE_BOUNDS[activeZone], {padding:[30,30]});
+}
+
+renderMarkers();
+renderList();
+</script>
+</body>
+</html>
