@@ -188,8 +188,8 @@ function showPopup(idx){
   const naverAddr = encodeURIComponent(p.addr_kr);
   const naverUrl  = "https://map.naver.com/v5/search/"+naverAddr;
   const gmapUrl   = p.place_id
-    ? "https://www.google.com/maps/place/?q=place_id:" + p.place_id
-    : "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(p.kr+" "+p.addr_kr);
+    ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.kr) + "&query_place_id=" + p.place_id
+    : "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.kr + " " + p.addr_kr);
 
   const drag=isMobile()?"<div class=\"popup-drag\"></div>":"";
 
