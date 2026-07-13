@@ -437,11 +437,6 @@ function closePopup(cb){
 function showPopup(idx){
   const p=DATA[idx];
   const col=COL[p.cat],em=EMO[p.cat];
-  const gurl=p.google_url
-    ?p.google_url
-    :p.place_id
-    ?"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(p.kr)+"&query_place_id="+p.place_id
-    :"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(p.kr+" "+p.addr_kr);
   // naver_url：若有店家提供的 Naver Map 專屬連結就直接用，否則退回韓文店名搜尋（與 Google Maps 上的名稱一致）
   const nurl=p.naver_url
     ?p.naver_url
@@ -495,7 +490,6 @@ function showPopup(idx){
   // 按鈕
   document.getElementById("pc-btns").innerHTML=
     '<div class="pc-btns">'+
-      '<a class="pc-btn pc-btn-g" href="'+gurl+'" target="_blank">🗺 Google Maps</a>'+
       '<a class="pc-btn pc-btn-n" href="'+nurl+'" target="_blank">🟢 Naver Map</a>'+
     '</div>';
 
