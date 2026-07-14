@@ -161,14 +161,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .pc-pill-val{color:var(--text);font-weight:700;font-size:11px;line-height:1.3;min-width:0;font-variant-numeric:tabular-nums}
 .pc-pill-lbl{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px}
 
-/* ─ 地址塊 ─ */
-.pc-addr{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:13px;cursor:pointer;transition:background .12s,border-color .12s}
-.pc-addr:hover{background:#efeae2;border-color:#d9d1c2}
-.pc-addr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.pc-addr-lbl{font-size:9px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
-.pc-addr-copy{font-size:10px;color:var(--accent);font-weight:700;border:none;background:none;cursor:pointer;padding:0}
-.pc-addr-kr{font-size:12.5px;color:var(--text);font-weight:700;line-height:1.5;margin-bottom:3px}
-.pc-addr-en{font-size:10.5px;color:var(--muted);line-height:1.4}
 
 /* ─ 筆記區 ─ */
 .pc-note-wrap{margin-bottom:15px}
@@ -300,7 +292,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
       <div class="pc-body">
         <div id="pc-head"></div>
         <div id="pc-pills"></div>
-        <div id="pc-addr"></div>
         <div id="pc-note"></div>
         <div id="pc-btns"></div>
       </div>
@@ -468,17 +459,6 @@ function showPopup(idx){
       '</div>'+
     '</div>';
 
-  // 地址
-  document.getElementById("pc-addr").innerHTML=
-    '<div class="pc-addr" onclick="copyAddr(\''+p.addr_kr+'\')">'+
-      '<div class="pc-addr-top">'+
-        '<span class="pc-addr-lbl">📍 地址</span>'+
-        '<button class="pc-addr-copy">複製</button>'+
-      '</div>'+
-      '<div class="pc-addr-kr">'+p.addr_kr+'</div>'+
-      '<div class="pc-addr-en">'+p.addr_en+'</div>'+
-    '</div>';
-
   // 筆記
   const noteHtml = parseNote(p.note);
   document.getElementById("pc-note").innerHTML=
@@ -498,13 +478,6 @@ function showPopup(idx){
   pc.classList.remove("is-open");
   void pc.offsetWidth; // reflow
   requestAnimationFrame(()=>{ pc.classList.add("is-open"); });
-}
-
-function copyAddr(addr){
-  navigator.clipboard.writeText(addr).then(()=>{
-    const btn=document.querySelector(".pc-addr-copy");
-    if(btn){btn.textContent="✓ 已複製";setTimeout(()=>btn.textContent="複製",2000);}
-  }).catch(()=>{});
 }
 
 // ── MARKERS ──────────────────────────────────
