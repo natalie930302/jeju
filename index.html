@@ -322,10 +322,27 @@ function brandOf(p){
 }
 const BRAND_SHAPE={olive_young:"heart",abc_mart:"triangle",daiso:"square",uniqlo:"star",olens:"pentagon"};
 // 24×24 viewBox 的 SVG 形狀，用真正的向量路徑取代 CSS clip-path，邊緣才會平滑
+// 把多邊形頂點的直角轉成圓角：每個頂點往兩側邊各退回r的距離，中間用二次貝茲曲線（控制點=原本的尖角）繞過去，
+// 效果跟方形圖標的border-radius圓角一致，而不只是stroke-linejoin那種只圓邊框、填色本體還是尖的做法
+function roundedPolygonPath(pts,r){
+  const n=pts.length;
+  let d="";
+  for(let i=0;i<n;i++){
+    const prev=pts[(i-1+n)%n],cur=pts[i],next=pts[(i+1)%n];
+    const v1x=cur[0]-prev[0],v1y=cur[1]-prev[1],len1=Math.hypot(v1x,v1y);
+    const v2x=next[0]-cur[0],v2y=next[1]-cur[1],len2=Math.hypot(v2x,v2y);
+    const r1=Math.min(r,len1/2),r2=Math.min(r,len2/2);
+    const p1x=cur[0]-v1x/len1*r1,p1y=cur[1]-v1y/len1*r1;
+    const p2x=cur[0]+v2x/len2*r2,p2y=cur[1]+v2y/len2*r2;
+    d+=(i===0?"M":"L")+p1x.toFixed(2)+","+p1y.toFixed(2)+" ";
+    d+="Q"+cur[0]+","+cur[1]+" "+p2x.toFixed(2)+","+p2y.toFixed(2)+" ";
+  }
+  return d+"Z";
+}
 const SHAPE_SVG={
-  triangle:'<polygon points="12,2.5 22,20.5 2,20.5"/>',
-  pentagon:'<polygon points="12,2 21.5,9 17.8,20.5 6.2,20.5 2.5,9"/>',
-  star:'<polygon points="12,2 14.7,9 22,9.5 16.3,14.2 18.2,21.3 12,17.3 5.8,21.3 7.7,14.2 2,9.5 9.3,9"/>',
+  triangle:'<path d="'+roundedPolygonPath([[12,2.5],[22,20.5],[2,20.5]],2.4)+'"/>',
+  pentagon:'<path d="'+roundedPolygonPath([[12,2],[21.5,9],[17.8,20.5],[6.2,20.5],[2.5,9]],1.8)+'"/>',
+  star:'<path d="'+roundedPolygonPath([[12,2],[14.7,9],[22,9.5],[16.3,14.2],[18.2,21.3],[12,17.3],[5.8,21.3],[7.7,14.2],[2,9.5],[9.3,9]],1.0)+'"/>',
   heart:'<path d="M12,21 C12,21 3,14.3 3,8.3 C3,5.2 5.4,2.8 8.4,2.8 C10.1,2.8 11.5,3.6 12,4.9 C12.5,3.6 13.9,2.8 15.6,2.8 C18.6,2.8 21,5.2 21,8.3 C21,14.3 12,21 12,21 Z"/>'
 };
 // 不同形狀在同一個bounding box裡實際「填色面積」差很多（星形/三角形有很多留白角落），
@@ -523,21 +540,20 @@ function mkIcon(p,sel){
   const col=colorOf(p),bc=borderColorOf(p);
   const s=sel?22:14,b=sel?3:2;
   const shape=shapeOf(p);
-  const ring=sel?",0 0 0 4px "+col.replace(")",",0.2)"):"";
+  // 選中時單純放大尺寸當作提示，不再疊加額外的外框/光暈（之前的box-shadow ring在方形上看起來像多一層外框）
   let html,iconS=s;
   if(shape==="circle"||shape==="square"){
     const rad=shape==="circle"?"50%":"3px";
     // box-sizing:border-box，讓邊框往內縮而不是撐大方框，尺寸才會跟SVG圖標一致
-    html='<div style="width:'+s+'px;height:'+s+'px;box-sizing:border-box;background:'+col+';border:'+b+'px solid '+bc+';border-radius:'+rad+';box-shadow:0 2px 8px rgba(0,0,0,.3)'+ring+';cursor:pointer;transition:all .15s"></div>';
+    html='<div style="width:'+s+'px;height:'+s+'px;box-sizing:border-box;background:'+col+';border:'+b+'px solid '+bc+';border-radius:'+rad+';box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer;transition:all .15s"></div>';
   } else {
-    // 多邊形圖標改用真正的SVG向量路徑繪製（非CSS clip-path），邊緣才會平滑抗鋸齒，stroke-linejoin圓角讓轉角也不會太銳利
+    // 多邊形圖標改用真正的SVG向量路徑繪製（非CSS clip-path），邊緣才會平滑抗鋸齒，頂點也是真的圓角（見SHAPE_SVG）
     // 同bounding box下star/triangle等形狀填色面積遠小於圓形，視覺上會顯得比較小，所以放大SHAPE_SCALE倍來對齊視覺大小
     iconS=Math.round(s*(SHAPE_SCALE[shape]||1));
     // stroke-width是用viewBox座標單位（0-24），不是實際px；換算成跟圓形border同樣的「實際像素粗細」，
     // 邊框視覺份量才會跟圓形一致（單純固定一個viewBox數值，形狀縮放後實際px粗細會各不相同）
     const strokeW=(b/iconS*24).toFixed(2);
-    const selGlow=sel?'filter:drop-shadow(0 2px 3px rgba(0,0,0,.35)) drop-shadow(0 0 3px '+col+');':'filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));';
-    html='<svg width="'+iconS+'" height="'+iconS+'" viewBox="0 0 24 24" style="display:block;cursor:pointer;transition:all .15s;'+selGlow+'">'
+    html='<svg width="'+iconS+'" height="'+iconS+'" viewBox="0 0 24 24" style="display:block;cursor:pointer;transition:all .15s;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))">'
       +'<g fill="'+col+'" stroke="'+bc+'" stroke-width="'+strokeW+'" stroke-linejoin="round" stroke-linecap="round">'
       +SHAPE_SVG[shape]
       +'</g></svg>';
