@@ -327,6 +327,8 @@ function brandOf(p){
 // 只剩圓形（獨立店/其他分類）跟方形（5大連鎖品牌）兩種形狀
 function shapeOf(p){return brandOf(p)?"square":"circle";}
 function isChain(p){return !!brandOf(p);}
+const BRAND_LETTER={olive_young:"O",abc_mart:"A",daiso:"D",uniqlo:"U",olens:"N"};
+function brandLetter(p){const b=brandOf(p);return b?BRAND_LETTER[b]:null;}
 function dotHtml(p){
   const col=colorOf(p);
   if(shapeOf(p)==="square") return '<div class="pdot" style="background:'+col+';border-radius:2px"></div>';
@@ -514,10 +516,14 @@ function showPopup(idx){
 function mkIcon(p,sel){
   const col=colorOf(p),bc=borderColorOf(p);
   const s=sel?22:14,b=sel?3:2;
-  const rad=shapeOf(p)==="square"?"3px":"50%";
+  const isSq=shapeOf(p)==="square";
+  const rad=isSq?"3px":"50%";
   const ring=sel?",0 0 0 4px "+hexToRgba(col,.35):"";
+  // 連鎖店方形圖標裡疊一個品牌字母（見BRAND_LETTER），圓形不顯示
+  const letter=isSq?brandLetter(p):null;
+  const label=letter?'<span style="color:#fff;font-size:'+Math.round(s*.52)+'px;font-weight:800;line-height:1;font-family:var(--font-ui)">'+letter+'</span>':'';
   // box-sizing:border-box，讓邊框往內縮而不是撐大方框
-  const html='<div style="width:'+s+'px;height:'+s+'px;box-sizing:border-box;background:'+col+';border:'+b+'px solid '+bc+';border-radius:'+rad+';box-shadow:0 2px 8px rgba(0,0,0,.3)'+ring+';cursor:pointer;transition:all .15s"></div>';
+  const html='<div style="width:'+s+'px;height:'+s+'px;box-sizing:border-box;background:'+col+';border:'+b+'px solid '+bc+';border-radius:'+rad+';box-shadow:0 2px 8px rgba(0,0,0,.3)'+ring+';cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center">'+label+'</div>';
   return L.divIcon({
     className:"",
     html:html,
