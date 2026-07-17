@@ -519,13 +519,21 @@ function mkIcon(p,sel){
   const s=sel?22:14,b=sel?3:2;
   const shape=shapeOf(p);
   const ring=sel?",0 0 0 4px "+col.replace(")",",0.2)"):"";
-  let shapeStyle;
-  if(shape==="circle") shapeStyle='border:'+b+'px solid '+bc+';border-radius:50%';
-  else if(shape==="square") shapeStyle='border:'+b+'px solid '+bc+';border-radius:3px';
-  else shapeStyle='border-radius:0;clip-path:'+SHAPE_CLIP[shape];
+  let html;
+  if(shape==="circle"||shape==="square"){
+    const rad=shape==="circle"?"50%":"3px";
+    html='<div style="width:'+s+'px;height:'+s+'px;background:'+col+';border:'+b+'px solid '+bc+';border-radius:'+rad+';box-shadow:0 2px 8px rgba(0,0,0,.3)'+ring+';cursor:pointer;transition:all .15s"></div>';
+  } else {
+    // 多邊形圖標：border+clip-path 在同一層會被裁掉，改用「白色底形狀 + 內縮的彩色形狀」疊層模擬邊框
+    const clip=SHAPE_CLIP[shape];
+    const inner=s-b*2;
+    html='<div style="width:'+s+'px;height:'+s+'px;background:'+bc+';clip-path:'+clip+';box-shadow:0 2px 8px rgba(0,0,0,.3)'+ring+';cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center">'
+      +'<div style="width:'+inner+'px;height:'+inner+'px;background:'+col+';clip-path:'+clip+'"></div>'
+      +'</div>';
+  }
   return L.divIcon({
     className:"",
-    html:'<div style="width:'+s+'px;height:'+s+'px;background:'+col+';'+shapeStyle+';box-shadow:0 2px 8px rgba(0,0,0,.3)'+ring+';cursor:pointer;transition:all .15s"></div>',
+    html:html,
     iconSize:[s,s],iconAnchor:[s/2,s/2]
   });
 }
