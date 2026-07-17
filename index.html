@@ -523,12 +523,14 @@ function mkIcon(p,sel){
   let html;
   if(shape==="circle"||shape==="square"){
     const rad=shape==="circle"?"50%":"3px";
-    html='<div style="width:'+s+'px;height:'+s+'px;background:'+col+';border:'+b+'px solid '+bc+';border-radius:'+rad+';box-shadow:0 2px 8px rgba(0,0,0,.3)'+ring+';cursor:pointer;transition:all .15s"></div>';
+    // box-sizing:border-box，讓邊框往內縮而不是撐大方框，尺寸才會跟SVG圖標一致
+    html='<div style="width:'+s+'px;height:'+s+'px;box-sizing:border-box;background:'+col+';border:'+b+'px solid '+bc+';border-radius:'+rad+';box-shadow:0 2px 8px rgba(0,0,0,.3)'+ring+';cursor:pointer;transition:all .15s"></div>';
   } else {
     // 多邊形圖標改用真正的SVG向量路徑繪製（非CSS clip-path），邊緣才會平滑抗鋸齒，stroke-linejoin圓角讓轉角也不會太銳利
+    // stroke-width刻意用比圓角方形細很多的值：尖角形狀（星形尖角、愛心底部）本身就窄，粗邊框會直接吃掉整個尖端
     const selGlow=sel?'filter:drop-shadow(0 2px 3px rgba(0,0,0,.35)) drop-shadow(0 0 3px '+col+');':'filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));';
     html='<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" style="display:block;cursor:pointer;transition:all .15s;'+selGlow+'">'
-      +'<g fill="'+col+'" stroke="'+bc+'" stroke-width="'+b+'" stroke-linejoin="round" stroke-linecap="round">'
+      +'<g fill="'+col+'" stroke="'+bc+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">'
       +SHAPE_SVG[shape]
       +'</g></svg>';
   }
