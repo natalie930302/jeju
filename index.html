@@ -348,7 +348,8 @@ const SHAPE_SVG={
   triangle:roundedPolygonPath([[12,2.5],[22,20.5],[2,20.5]],2.4),
   pentagon:roundedPolygonPath([[12,2],[21.5,9],[17.8,20.5],[6.2,20.5],[2.5,9]],1.8),
   star:roundedPolygonPath([[12,2],[14.7,9],[22,9.5],[16.3,14.2],[18.2,21.3],[12,17.3],[5.8,21.3],[7.7,14.2],[2,9.5],[9.3,9]],1.0),
-  heart:"M12,21 C12,21 3,14.3 3,8.3 C3,5.2 5.4,2.8 8.4,2.8 C10.1,2.8 11.5,3.6 12,4.9 C12.5,3.6 13.9,2.8 15.6,2.8 C18.6,2.8 21,5.2 21,8.3 C21,14.3 12,21 12,21 Z"
+  // 頂部中間凹角、底部尖角原本都是硬角，各自加一小段圓角過渡（跟頂點圓角同樣邏輯，只是套在曲線銜接處）
+  heart:"M11.3,19.8 C9.5,18.2 3,13.2 3,8.3 C3,5.2 5.4,2.8 8.4,2.8 C10.1,2.8 11.3,3.4 11.75,4.4 Q12,4.9 12.25,4.4 C12.7,3.4 13.9,2.8 15.6,2.8 C18.6,2.8 21,5.2 21,8.3 C21,13.2 14.5,18.2 12.7,19.8 Q12,20.5 11.3,19.8 Z"
 };
 // 不同形狀在同一個bounding box裡實際「填色面積」差很多（星形/三角形有很多留白角落），
 // 視覺上會比圓形小一圈，所以個別放大到跟圓形觀感相近的視覺大小
@@ -559,11 +560,23 @@ function mkIcon(p,sel){
     // stroke-width是用viewBox座標單位（0-24），不是實際px；換算成跟圓形border同樣的「實際像素粗細」，
     // 邊框視覺份量才會跟圓形一致（單純固定一個viewBox數值，形狀縮放後實際px粗細會各不相同）
     const strokeW=(b/iconS*24).toFixed(2);
-    // 選中時用drop-shadow疊出跟circle/square box-shadow ring同樣效果的外框，不額外加路徑/圖層，SVG裡仍然只有一條path
-    const ringPx=4*(24/iconS);
-    const selRing=sel?" drop-shadow(0 0 "+ringPx.toFixed(2)+"px "+hexToRgba(col,.6)+")":"";
-    html='<svg width="'+iconS+'" height="'+iconS+'" viewBox="0 0 24 24" style="display:block;cursor:pointer;transition:all .15s;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))'+selRing+'">'
-      +'<path d="'+SHAPE_SVG[shape]+'" fill="'+col+'" stroke="'+bc+'" stroke-width="'+strokeW+'" stroke-linejoin="round" stroke-linecap="round"/>'
+    // 選中時要跟circle/square的box-shadow ring一樣是「銳利的第二層框」，CSS filter:drop-shadow做不到（一定會糊），
+    // 改用SVG濾鏡feMorphology把形狀輪廓整個往外膨脹一圈再上色，疊在原本圖形底下，才是真的硬邊第二層框，且仍只有一條<path>
+    let defs="",filterAttr="";
+    if(sel){
+      const ringR=(4/iconS*24).toFixed(2);
+      const fid="rg"+shape+Math.round(iconS)+col.replace("#","");
+      defs='<defs><filter id="'+fid+'" x="-80%" y="-80%" width="260%" height="260%">'
+        +'<feMorphology in="SourceAlpha" operator="dilate" radius="'+ringR+'" result="d"/>'
+        +'<feFlood flood-color="'+col+'" flood-opacity=".35" result="c"/>'
+        +'<feComposite in="c" in2="d" operator="in" result="ring"/>'
+        +'<feMerge><feMergeNode in="ring"/><feMergeNode in="SourceGraphic"/></feMerge>'
+        +'</filter></defs>';
+      filterAttr=' filter="url(#'+fid+')"';
+    }
+    html='<svg width="'+iconS+'" height="'+iconS+'" viewBox="0 0 24 24" style="display:block;overflow:visible;cursor:pointer;transition:all .15s;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))">'
+      +defs
+      +'<path d="'+SHAPE_SVG[shape]+'" fill="'+col+'" stroke="'+bc+'" stroke-width="'+strokeW+'" stroke-linejoin="round" stroke-linecap="round"'+filterAttr+'/>'
       +'</svg>';
   }
   return L.divIcon({
