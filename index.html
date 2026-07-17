@@ -565,24 +565,15 @@ function mkIcon(p,sel){
         +'<path d="'+SHAPE_SVG[shape]+'" fill="'+col+'" stroke="'+bc+'" stroke-width="'+strokeW+'" stroke-linejoin="round" stroke-linecap="round"/>'
         +'</svg>';
     } else {
-      // 選中時要跟circle/square的box-shadow ring一樣是「銳利的第二層框」，CSS filter:drop-shadow做不到（一定會糊），
-      // 改用SVG濾鏡feMorphology把形狀輪廓整個往外膨脹一圈再上色，疊在原本圖形底下，才是真的硬邊第二層框，且仍只有一條<path>
-      // 外圈框會超出原本24x24的範圍，不能只靠overflow:visible（容易被上層的Leaflet容器裁掉），
-      // 改成直接放大viewBox跟實際canvas尺寸，把外框的空間包進SVG自己的範圍內
-      const ringR=4/iconS*24;
-      const pad=ringR+2;
-      const vb=24+pad*2;
-      const totalS=Math.round(iconS*vb/24);
-      const fid="rg"+shape+iconS+col.replace("#","");
-      const defs='<defs><filter id="'+fid+'" x="-50%" y="-50%" width="200%" height="200%">'
-        +'<feMorphology in="SourceAlpha" operator="dilate" radius="'+ringR.toFixed(2)+'" result="d"/>'
-        +'<feFlood flood-color="'+col+'" flood-opacity=".35" result="c"/>'
-        +'<feComposite in="c" in2="d" operator="in" result="ring"/>'
-        +'<feMerge><feMergeNode in="ring"/><feMergeNode in="SourceGraphic"/></feMerge>'
-        +'</filter></defs>';
-      html='<svg width="'+totalS+'" height="'+totalS+'" viewBox="'+(-pad).toFixed(2)+' '+(-pad).toFixed(2)+' '+vb.toFixed(2)+' '+vb.toFixed(2)+'" style="display:block;cursor:pointer;transition:all .15s;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))">'
-        +defs
-        +'<path d="'+SHAPE_SVG[shape]+'" fill="'+col+'" stroke="'+bc+'" stroke-width="'+strokeW+'" stroke-linejoin="round" stroke-linecap="round" filter="url(#'+fid+')"/>'
+      // 選中時的外框改用「同一條path複製一份，用transform從中心點放大，畫在底下」來做，純幾何縮放，
+      // 不依賴SVG濾鏡的filter region百分比換算（之前feMorphology版本在實際部署後仍回報邊框被裁切，
+      // 换成這種只要「縮放後的座標範圍 < viewBox範圍」就保證不會被裁到的作法，判斷起來更直接可靠）
+      // viewBox固定放大到-3~27（比0-24的核心圖形多留3個單位），縮放1.35倍後的座標範圍還在裡面就不會裁到
+      const vbPad=-3,vbSize=30;
+      const totalS=Math.round(iconS*vbSize/24);
+      html='<svg width="'+totalS+'" height="'+totalS+'" viewBox="'+vbPad+' '+vbPad+' '+vbSize+' '+vbSize+'" style="display:block;cursor:pointer;transition:all .15s;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))">'
+        +'<path d="'+SHAPE_SVG[shape]+'" fill="'+hexToRgba(col,.35)+'" transform="translate(12,12) scale(1.35) translate(-12,-12)"/>'
+        +'<path d="'+SHAPE_SVG[shape]+'" fill="'+col+'" stroke="'+bc+'" stroke-width="'+strokeW+'" stroke-linejoin="round" stroke-linecap="round"/>'
         +'</svg>';
       iconS=totalS;
     }
