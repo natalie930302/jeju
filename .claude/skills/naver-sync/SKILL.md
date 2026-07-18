@@ -120,7 +120,21 @@ Rules learned from doing this across ~175 entries:
 
 Never mix Korean text, multiple named menu items, or NT$ parentheticals into this field — that detail belongs in the note's 推薦/注意事項 lines, not the price pill. Only-adult pricing (no 청소년/어린이/군인/도민 tiers). NT$ conversion rate for this project: **1 TWD ≈ 46.7 KRW** (round to nearest 5 NT$).
 
-## 5. Validation before committing
+## 5. Cross-checking review quality (Naver keyword themes + Kakao Map rating)
+
+Only meaningful for actual businesses (美食/咖啡廳/購物) — beaches, islands, and other 景點 without a storefront have no rating on Kakao Map and often no theme breakdown on Naver either.
+
+**Naver's real vote-counted review themes** (better than `keywordList`, which is just SEO tags): `state['VisitorReviewStatsResult:' + placeId].analysis.themes` → array of `{code, label, count}`, e.g. `{code:"taste", label:"맛", count:471}`. This is the actual capsule-tag ranking shown at the top of the review tab. If `taste`/`total`(만족도) dominates, the place is substance-driven; if `mood`(분위기)/photo-adjacent themes rank above taste, it's a style-over-substance signal worth a note.
+
+**Kakao Map has no Apollo-style state** — it's plain server-rendered text, so scrape `document.body.innerText` and parse it, not CSS selectors (Kakao's class names aren't stable/guessable). Search `https://map.kakao.com/?q={query}` with the place's `kr` name. Each result block is delimited by `즐겨찾기\n로드뷰\n`; parse per block: first line (strip a leading `A`/`B`/... letter marker) is name+category, `별점` is followed by the rating then a `N건` line, OR the block instead says `후기 미제공` (no rating computed yet even if reviews exist — itself a useful "too new to trust" signal), a `리뷰 N` line gives review count, and an address line starts with the province name. **Always filter results to addresses starting with `제주`** — a bare business name like "온오프" or "해지개" returns dozens of unrelated Seoul/Incheon/Gyeongnam matches with the same name, and picking the wrong one silently reports a different store's rating. Small/local places sometimes aren't listed on Kakao at all (zero 제주 results) — that's a valid outcome, not a bug.
+
+**Method that doesn't work: 저장 (bookmark/save) count.** Confirmed by testing both desktop (`pcmap.place.naver.com`) and mobile (`m.place.naver.com`) — the 저장 button exists in the UI but Naver never renders the actual saved-count number on the web in either surface, only on the native app. Don't attempt this; there's no field to scrape.
+
+**Individual review text (real 영수증 리뷰 content, not just aggregate stats)**: top-level `state` keys matching `VisitorReview:{reviewId}` (visit `/place/{id}/review/visitor?reviewSort=recent`) → `body` (the actual review text), `rating`, `votedKeywords[]` (the specific per-review capsule tags, e.g. "음식이 맛있어요"), `item` (what they ordered), and a `receiptInfoUrl` field — its presence confirms the review is receipt-verified (구매 인증), the highest-trust review type. Pull a couple of these when a place needs a real quote (e.g. to explain a Naver/Kakao score gap), not for every place — it's a second full page load on top of the stats fetch.
+
+**A small Kakao sample is noise, not signal — don't report it as if it were.** Chain retail (Olive Young, ABC MART, Daiso, UNIQLO...) splits its real customer base across dozens of branches, so any single branch's Kakao rating is usually just 1–15 raters — essentially random. Standalone restaurants/cafes don't have this dilution, so even a modest count there (~8+) is meaningful. Use a category-aware minimum before including a Kakao score at all: **≥20 ratings for 購物, ≥8 for 美食/咖啡廳**; below that, omit Kakao from the note entirely rather than printing a misleadingly precise-looking number. The same logic applies to Naver itself in rare cases — a `VisitorReviewStatsResult.review.avgRating` under 2.0 backed by fewer than ~20 total reviews is often a single outlier rater (check `scores`/`authorCount`, not just `avgRating`) rather than a real consensus; don't report it as a plain score without checking the sample first.
+
+## 6. Validation before committing
 
 ```bash
 node -e "
