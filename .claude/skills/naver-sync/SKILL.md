@@ -77,6 +77,14 @@ const state = await page.evaluate(() => window.__APOLLO_STATE__ || null);
   - `pd['menus({"source":["tpirates"]})']` isn't reliable; instead scan **top-level** `state` keys matching `` `Menu:${placeId}_${n}` `` → each has `name, price, recommend:boolean, description`. `recommend:true` items are Naver's own picks — prefer these for the 推薦 section over guessing.
 - A day-group with `businessHours: null` and `description: "정기휴무 (매주 수요일)"` means closed that day — don't skip it, it's the closure info.
 - Ticket-tiered places (attractions) list prices as menu items too, e.g. `성인:19000`, `청소년:16000` — use the adult (성인/어른/일반) tier only, per this project's pricing rule.
+- **The structured `Menu:` entities are not the full picture.** Small/informal items (seasonal specials, packaged retail add-ons like gift-box sweets) are often only shown as a photographed menu board or a plain product photo, never entered as a formal menu row. If you're about to write a hedge like "未能核實是否仍販售" for something the source material (a screenshot, a review) claims exists, check the photo gallery before hedging: `page.evaluate(() => Array.from(document.querySelectorAll('img')).map(img => ({src: img.src, alt: img.alt})))` on the `/place/{id}/menu` route — look for `alt` starting with `메뉴판` (menu board), and for generic `business`-type photos in `PlaceDetailTopPhotoItem:business_*` inside `__APOLLO_STATE__`, which often show product photos of exactly these off-menu items. Download and view the image directly rather than guessing from the filename.
+
+### CRLF gotcha
+After a `git add`/`commit`/merge touches `index.html`, git's `core.autocrlf` normalizes the working-tree copy to CRLF line endings, which breaks the naive `lines[idx].slice('const DATA='.length, -1)` extraction (it only strips one trailing char, leaving a stray `\r` or `;` and causing `JSON.parse` to throw "Unexpected non-whitespace character"). Always strip a trailing `\r` before slicing off the `;`:
+```js
+const trimmed = lines[idx].replace(/\r$/, '');
+const data = JSON.parse(trimmed.slice('const DATA='.length, -1));
+```
 
 ### Batch scraping
 
