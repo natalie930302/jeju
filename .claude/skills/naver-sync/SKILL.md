@@ -35,7 +35,7 @@ lines[309] = 'const DATA=' + JSON.stringify(data) + ';';
 fs.writeFileSync('index.html', lines.join('\n'));
 ```
 
-Field schema per item: `cat, route, zh, en, kr, naver_url, addr_en, addr_kr, lat, lng, hours, price, dish?, day, note, place_id?`.
+Field schema per item: `cat, route, zh, en, kr, naver_url, addr_en, addr_kr, lat, lng, hours, price, dish?, day, note, place_id?, kakao_id?, hot?`.
 
 ## 1. One-time environment setup (per machine, not per session)
 
@@ -130,7 +130,19 @@ Only meaningful for actual businesses (美食/咖啡廳/購物) — beaches, isl
 
 **Kakao Map has no Apollo-style state** — it's plain server-rendered text, so scrape `document.body.innerText` and parse it, not CSS selectors (Kakao's class names aren't stable/guessable). Search `https://map.kakao.com/?q={query}` with the place's `kr` name. Each result block is delimited by `즐겨찾기\n로드뷰\n`; parse per block: first line (strip a leading `A`/`B`/... letter marker) is name+category, `별점` is followed by the rating then a `N건` line, OR the block instead says `후기 미제공` (no rating computed yet even if reviews exist — itself a useful "too new to trust" signal), a `리뷰 N` line gives review count, and an address line starts with the province name. **Always filter results to addresses starting with `제주`** — a bare business name like "온오프" or "해지개" returns dozens of unrelated Seoul/Incheon/Gyeongnam matches with the same name, and picking the wrong one silently reports a different store's rating. Small/local places sometimes aren't listed on Kakao at all (zero 제주 results) — that's a valid outcome, not a bug.
 
-**The popup also has a one-click Kakao button for the user**, separate from the scraping method above: in `showPopup()` (index.html), `const kurl="https://map.kakao.com/?q="+encodeURIComponent(p.kr);` feeds a second button (`.pc-btn-k`, Kakao's brand yellow `#FEE500`) next to the existing Naver Map button, so the user can jump straight to Kakao's reviews for any place without needing a scrape. This is a live search link (same query pattern as the scraping method), not a stored per-place URL — no data field needed, it derives from `p.kr` at render time.
+**The popup also has a one-click Kakao button for the user**, separate from the scraping method above: in `showPopup()` (index.html), a second button (`.pc-btn-k`, Kakao's brand yellow `#FEE500`) sits next to the existing Naver Map button, linking straight to the place's Kakao page — `https://place.map.kakao.com/{kakaoId}` when a `kakao_id` is stored on the item, falling back to a live search link (`https://map.kakao.com/?q=`+encodeURIComponent(p.kr)) when it isn't. **Prefer the direct ID link** — a search-query link makes the user click through results themselves, which defeats the point of a one-click button.
+
+**Finding the Kakao place ID**: don't click "상세보기" (it opens a real new tab/popup, slow and flaky to drive) — the link is already a plain `<a>` in the DOM with the ID in its `href`, no click needed:
+```js
+await page.goto('https://map.kakao.com/?q=' + encodeURIComponent(query), { waitUntil: 'networkidle', timeout: 20000 });
+const items = await page.evaluate(() => Array.from(document.querySelectorAll('a.moreview')).map(a => ({
+  href: a.href,                                    // "https://place.map.kakao.com/{id}"
+  liText: a.closest('li') ? a.closest('li').innerText : '',  // same block text as the search-parsing method above
+})));
+```
+Each `<li>` (one per search result) contains both the `a.moreview` detail link and the same info block (name/rating/address) the plain-text search method parses — so **do both extractions from the same page load**, don't scrape twice. Filter to `제주`-prefixed addresses as before. When more than one 제주 result comes back for a query (common for generic names), don't just take the first — score candidates by address-token overlap against the item's stored `addr_kr` (see `pickBest()` in the scratchpad's `kakao_id_batch.js` pattern) and require a nonzero score before trusting the match; otherwise leave `kakao_id` unset rather than risk linking to the wrong branch.
+
+Add the field as `kakao_id` (string) on items where a confident match was found — leave it absent (not `null`) when no match/ambiguous, so `p.kakao_id ?` in the popup code falls through to the search-link fallback cleanly.
 
 **Method that doesn't work: 저장 (bookmark/save) count.** Confirmed by testing both desktop (`pcmap.place.naver.com`) and mobile (`m.place.naver.com`) — the 저장 button exists in the UI but Naver never renders the actual saved-count number on the web in either surface, only on the native app. Don't attempt this; there's no field to scrape.
 
