@@ -191,6 +191,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .pc-btn-g:hover{filter:brightness(.92)}
 .pc-btn-n{background:#03C75A;color:#fff}
 .pc-btn-n:hover{filter:brightness(.92)}
+.pc-btn-k{background:#FEE500;color:#191919}
+.pc-btn-k:hover{filter:brightness(.92)}
 
 /* ─ Drag handle (mobile) ─ */
 .pc-drag{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 6px}
@@ -470,6 +472,7 @@ function showPopup(idx){
   const nurl=p.naver_url
     ?p.naver_url
     :"https://map.naver.com/v5/search/"+encodeURIComponent(p.kr);
+  const kurl="https://map.kakao.com/?q="+encodeURIComponent(p.kr);
 
   // 色條
   document.getElementById("pbar").style.cssText="height:5px;background:"+col;
@@ -509,6 +512,7 @@ function showPopup(idx){
   document.getElementById("pc-btns").innerHTML=
     '<div class="pc-btns">'+
       '<a class="pc-btn pc-btn-n" href="'+nurl+'" target="_blank">Naver Map</a>'+
+      '<a class="pc-btn pc-btn-k" href="'+kurl+'" target="_blank">Kakao評論</a>'+
     '</div>';
 
   // 動畫
