@@ -122,6 +122,8 @@ Never mix Korean text, multiple named menu items, or NT$ parentheticals into thi
 
 ## 5. Cross-checking review quality (Naver keyword themes + Kakao Map rating)
 
+**Mandatory for every new 美食/咖啡廳/購物 entry, not just the batch check that happened once.** When adding a new place in these categories, always run this section's checks before finishing — don't just pull hours/menu/price and stop. A place added without this step is missing data every other entry in these categories has, which is exactly the kind of gap a user will notice and have to ask about.
+
 Only meaningful for actual businesses (美食/咖啡廳/購物) — beaches, islands, and other 景點 without a storefront have no rating on Kakao Map and often no theme breakdown on Naver either.
 
 **Naver's real vote-counted review themes** (better than `keywordList`, which is just SEO tags): `state['VisitorReviewStatsResult:' + placeId].analysis.themes` → array of `{code, label, count}`, e.g. `{code:"taste", label:"맛", count:471}`. This is the actual capsule-tag ranking shown at the top of the review tab. If `taste`/`total`(만족도) dominates, the place is substance-driven; if `mood`(분위기)/photo-adjacent themes rank above taste, it's a style-over-substance signal worth a note.
@@ -133,6 +135,18 @@ Only meaningful for actual businesses (美食/咖啡廳/購物) — beaches, isl
 **Individual review text (real 영수증 리뷰 content, not just aggregate stats)**: top-level `state` keys matching `VisitorReview:{reviewId}` (visit `/place/{id}/review/visitor?reviewSort=recent`) → `body` (the actual review text), `rating`, `votedKeywords[]` (the specific per-review capsule tags, e.g. "음식이 맛있어요"), `item` (what they ordered), and a `receiptInfoUrl` field — its presence confirms the review is receipt-verified (구매 인증), the highest-trust review type. Pull a couple of these when a place needs a real quote (e.g. to explain a Naver/Kakao score gap), not for every place — it's a second full page load on top of the stats fetch.
 
 **A small Kakao sample is noise, not signal — don't report it as if it were.** Chain retail (Olive Young, ABC MART, Daiso, UNIQLO...) splits its real customer base across dozens of branches, so any single branch's Kakao rating is usually just 1–15 raters — essentially random. Standalone restaurants/cafes don't have this dilution, so even a modest count there (~8+) is meaningful. Use a category-aware minimum before including a Kakao score at all: **≥20 ratings for 購物, ≥8 for 美食/咖啡廳**; below that, omit Kakao from the note entirely rather than printing a misleadingly precise-looking number. The same logic applies to Naver itself in rare cases — a `VisitorReviewStatsResult.review.avgRating` under 2.0 backed by fewer than ~20 total reviews is often a single outlier rater (check `scores`/`authorCount`, not just `avgRating`) rather than a real consensus; don't report it as a plain score without checking the sample first.
+
+Append the result as a sentence at the end of the note's 注意事項 line (create the line if the note doesn't have one — 注意事項 is always last, see §3), e.g. `Naver 4.95分(17,577則)；Kakao 4.8分(109則)，與Naver評分一致，可信度高。` Skip the sentence entirely if neither Naver nor Kakao clears its threshold — don't force a low-confidence number into the note.
+
+### `hot` flag / ⭐ star badge in the sidebar list
+
+A place gets `"hot": true` (renders a ⭐ before its name in the sidebar list, via `.phot` in `renderList()`) only if **all** of these hold — check in this order, don't skip the last one:
+
+1. **Naver rating ≥ 4.7 with ≥ 20 reviews.**
+2. **Not polarized**: if Kakao clears its category threshold above, the Naver−Kakao gap must be < 0.5. A place Naver rates 4.8 and Kakao rates 4.1 is a real disagreement, not noise — exclude it even though step 1 alone would pass.
+3. **Floor-check by reading actual review text, not the `scores` bucket array.** The `scores` array on `VisitorReviewStatsResult.review` cannot be reliably mapped to star levels — its `score` field is always `null` and there's no visual histogram on the page to cross-reference against, so any ordering assumption (ascending/descending) is a guess. Instead fetch individual `VisitorReview` entities from `/place/{id}/review/visitor?reviewSort=recent` (recent, not the default `recommend` sort — recommend biases toward already-upvoted/positive content and undersamples complaints) and read the `body` text of ~10 of them directly. Look for a genuine, specific complaint (bad service, wrong order, quality inconsistency) as opposed to incidental "아쉬웠지만..." asides inside an otherwise glowing review (sold out item, small parking lot — these don't count). If a real complaint turns up despite a high average, don't grant the star — fold the complaint into the note's 注意事項 instead (see the 明浩豚肉 機場店 / 濟州따이 precedent).
+
+This is per-place manual judgment on step 3, not a script — when adding one or two new places it's fast enough to just read the reviews inline; only build a batch/background script (§2 batch pattern) when checking many places at once.
 
 ## 6. Validation before committing
 
