@@ -34,7 +34,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .topbar-title b{color:var(--accent)}
 .topbar-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;font-weight:500;letter-spacing:.1px}
 .badge{background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;padding:4px 11px;border-radius:20px;white-space:nowrap;letter-spacing:.2px;font-variant-numeric:tabular-nums}
-.menu-btn{display:none;width:36px;height:36px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;font-size:18px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;transition:background .12s}
+.menu-btn{display:flex;width:36px;height:36px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;font-size:18px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;transition:background .12s}
 .menu-btn:hover{background:rgba(255,255,255,.16)}
 
 /* ═══ FILTERBAR ═══ */
@@ -67,7 +67,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .main{display:flex;flex:1;overflow:hidden;min-height:0;position:relative}
 
 /* ═══ SIDEBAR ═══ */
-.sidebar{width:var(--sw);background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:transform .3s cubic-bezier(.22,1,.36,1)}
+.sidebar{width:var(--sw);background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:transform .3s cubic-bezier(.22,1,.36,1),width .3s cubic-bezier(.22,1,.36,1),border-color .3s}
+@media(min-width:641px){.sidebar.collapsed{width:0;border-right-color:transparent}}
 .sb-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--white)}
 .sb-head-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
 .sb-title{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
@@ -394,10 +395,17 @@ const isMob=()=>window.innerWidth<=640;
 
 // ── SIDEBAR ──────────────────────────────────
 function toggleSB(){
-  const open=document.getElementById("sb").classList.toggle("open");
-  document.getElementById("sov").classList.toggle("show",open);
-  document.getElementById("menubtn").textContent=open?"✕":"☰";
-  if(open)closePopup(null);
+  const sb=document.getElementById("sb");
+  if(isMob()){
+    const open=sb.classList.toggle("open");
+    document.getElementById("sov").classList.toggle("show",open);
+    document.getElementById("menubtn").textContent=open?"✕":"☰";
+    if(open)closePopup(null);
+  }else{
+    const collapsed=sb.classList.toggle("collapsed");
+    document.getElementById("menubtn").textContent=collapsed?"☰":"✕";
+    setTimeout(()=>map.invalidateSize(),320);
+  }
 }
 function closeSB(){
   document.getElementById("sb").classList.remove("open");
