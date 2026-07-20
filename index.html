@@ -325,8 +325,15 @@ function brandOf(p){
   if(n.indexOf("Olens")===0) return "olens";
   return null;
 }
-// 只剩圓形（獨立店/其他分類）跟方形（5大連鎖品牌）兩種形狀
-function shapeOf(p){return brandOf(p)?"square":"circle";}
+// 咖啡廳裡「可以隨手帶著買走的餅乾/飲料」類型（外帶為主，不是坐下來喝咖啡的店），也用方形跟一般咖啡廳做視覺區分
+const GRABGO_CAFE=["Paris Baguette","Compose Coffee","Abebe Bakery","umu布丁","濟州鮮榨果汁","Mongle"];
+function isGrabGoCafe(p){
+  if(p.cat!=="咖啡廳") return false;
+  const n=p.zh||"";
+  return GRABGO_CAFE.some(prefix=>n.indexOf(prefix)===0);
+}
+// 只剩圓形（獨立店/其他分類）跟方形（5大連鎖品牌＋外帶型咖啡廳）兩種形狀
+function shapeOf(p){return (brandOf(p)||isGrabGoCafe(p))?"square":"circle";}
 function isChain(p){return !!brandOf(p);}
 const BRAND_LETTER={olive_young:"O",abc_mart:"A",daiso:"D",uniqlo:"U",olens:"N"};
 function brandLetter(p){const b=brandOf(p);return b?BRAND_LETTER[b]:null;}
@@ -511,7 +518,7 @@ function showPopup(idx){
       '<div class="pc-note-body">'+noteHtml+'</div>'+
     '</div>';
 
-  // 按鈕
+  // 按鈕：沒有比對到準確Kakao分店的地點，就不顯示Kakao評論按鈕
   document.getElementById("pc-btns").innerHTML=
     '<div class="pc-btns">'+
       '<a class="pc-btn pc-btn-n" href="'+nurl+'" target="_blank">Naver Map</a>'+
