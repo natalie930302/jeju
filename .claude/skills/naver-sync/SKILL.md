@@ -154,13 +154,12 @@ Append the result as a sentence at the end of the note's 注意事項 line (crea
 
 ### `hot` flag / ⭐ star badge in the sidebar list
 
-A place gets `"hot": true` (renders a ⭐ before its name in the sidebar list, via `.phot` in `renderList()`) only if **all** of these hold — check in this order, don't skip the last one:
+A place gets `"hot": true` (renders a ⭐ before its name in the sidebar list, via `.phot` in `renderList()`) if **both** of these hold:
 
-1. **Naver rating ≥ 4.7 with ≥ 20 reviews.**
-2. **Not polarized**: if Kakao clears its category threshold above, the Naver−Kakao gap must be < 0.5. A place Naver rates 4.8 and Kakao rates 4.1 is a real disagreement, not noise — exclude it even though step 1 alone would pass.
-3. **Floor-check by reading actual review text, not the `scores` bucket array.** The `scores` array on `VisitorReviewStatsResult.review` cannot be reliably mapped to star levels — its `score` field is always `null` and there's no visual histogram on the page to cross-reference against, so any ordering assumption (ascending/descending) is a guess. Instead fetch individual `VisitorReview` entities from `/place/{id}/review/visitor?reviewSort=recent` (recent, not the default `recommend` sort — recommend biases toward already-upvoted/positive content and undersamples complaints) and read the `body` text of ~10 of them directly. Look for a genuine, specific complaint (bad service, wrong order, quality inconsistency) as opposed to incidental "아쉬웠지만..." asides inside an otherwise glowing review (sold out item, small parking lot — these don't count). If a real complaint turns up despite a high average, don't grant the star — fold the complaint into the note's 注意事項 instead (see the 明浩豚肉 機場店 / 濟州따이 precedent).
+1. The note has a recorded **Naver rating** (`Naver X分(Y則)`) **> 4.65**.
+2. The note has a recorded **Kakao rating** (`Kakao X分(Y則)`) **> 4.65**.
 
-This is per-place manual judgment on step 3, not a script — when adding one or two new places it's fast enough to just read the reviews inline; only build a batch/background script (§2 batch pattern) when checking many places at once.
+Both numbers must actually be present in the note — a place whose Kakao sample never cleared its category threshold (see above) has no Kakao number to check, so it can't qualify no matter how good its Naver score is. This is a simple, mechanical rule (superseded the earlier multi-step judgment-call version) — just parse both numbers out of the note and compare.
 
 ## 6. Validation before committing
 
