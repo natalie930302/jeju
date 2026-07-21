@@ -213,15 +213,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .itin-daygroup-hd{font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.5px;margin-bottom:6px}
 .itin-theme{font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px}
 .itin-stay{font-size:12px;color:var(--sub);margin-bottom:16px;display:flex;align-items:center;gap:5px}
-.itin-list{display:flex;flex-direction:column;position:relative}
-.itin-item{display:flex;gap:12px;padding-bottom:18px;position:relative;cursor:pointer}
-.itin-item:last-child{padding-bottom:0}
-.itin-item::before{content:"";position:absolute;left:20px;top:34px;bottom:0;width:2px;background:var(--border)}
-.itin-item:last-child::before{display:none}
-.itin-time{width:42px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--muted);padding-top:9px;text-align:right}
-.itin-dot{width:40px;height:40px;border-radius:50%;background:var(--white);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;z-index:1;box-shadow:var(--shadow-sm);transition:transform .12s,border-color .12s}
-.itin-item:hover .itin-dot{transform:scale(1.08);border-color:var(--accent)}
-.itin-card{flex:1;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;box-shadow:var(--shadow-sm);transition:box-shadow .12s,border-color .12s;min-width:0}
+.itin-list{display:flex;flex-direction:column;gap:8px}
+.itin-item{cursor:pointer}
+.itin-card-hd{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11px;font-weight:700;color:var(--muted)}
+.itin-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;box-shadow:var(--shadow-sm);transition:box-shadow .12s,border-color .12s;min-width:0}
+.itin-item:hover .itin-card{box-shadow:var(--shadow-md);border-color:#d8d0c2}
 .itin-item:hover .itin-card{box-shadow:var(--shadow-md);border-color:#d8d0c2}
 .itin-label{font-size:13px;font-weight:700;color:var(--text)}
 .itin-name{font-size:12px;color:var(--sub);margin-top:2px}
@@ -803,9 +799,8 @@ function itinDayHtml(d){
       }
     }
     return '<div class="itin-item" onclick="itinJump(\''+it.zh.replace(/'/g,"\\'")+'\')">'+
-      '<div class="itin-time">'+it.time+'</div>'+
-      '<div class="itin-dot">'+em+'</div>'+
       '<div class="itin-card">'+
+        '<div class="itin-card-hd">'+em+' '+it.time+'</div>'+
         '<div class="itin-label">'+it.label+'</div>'+
         '<div class="itin-name">'+it.zh+'</div>'+
         altsHtml+
