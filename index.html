@@ -230,8 +230,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .itin-opts-lbl{font-size:10.5px;color:var(--muted);font-weight:600;margin-right:2px}
 .itin-opt-chip{font-size:10.5px;padding:3px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--sub);font-weight:600;cursor:pointer}
 .itin-opt-chip:hover{border-color:var(--accent);color:var(--accent)}
-.itin-opt-select{font-size:11px;padding:5px 8px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-weight:600;cursor:pointer;max-width:100%;font-family:inherit}
-.itin-opt-select:hover{border-color:var(--accent)}
+.itin-opt-select{-webkit-appearance:none;appearance:none;font-size:11.5px;padding:6px 28px 6px 10px;border-radius:20px;background:var(--bg) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" fill="none" stroke="%23a39a8c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat right 10px center;border:1.5px solid var(--border);color:var(--text);font-weight:600;cursor:pointer;max-width:100%;font-family:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:border-color .12s,background-color .12s}
+.itin-opt-select:hover{border-color:var(--accent);background-color:var(--accent-l)}
+.itin-opt-select:focus{outline:none;border-color:var(--accent)}
 .itin-alt{margin-top:22px;padding-top:16px;border-top:1px dashed var(--border)}
 .itin-alt-title{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px}
 .itin-alt-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -794,9 +795,9 @@ function itinDayHtml(d){
         '</div>';
       }else{
         altsHtml='<div class="itin-opts"><span class="itin-opts-lbl">附近還可選（共'+alts.length+'間）：</span>'+
-          '<select class="itin-opt-select" onclick="event.stopPropagation()" onchange="if(this.value)itinJump(this.value)">'+
+          '<select class="itin-opt-select" title="選一個看看…" onclick="event.stopPropagation()" onchange="this.title=this.value||\'選一個看看…\';if(this.value)itinJump(this.value)">'+
           '<option value="">選一個看看…</option>'+
-          alts.map(zh=>'<option value="'+zh.replace(/"/g,"&quot;")+'">'+zh+'</option>').join("")+
+          alts.map(zh=>'<option value="'+zh.replace(/"/g,"&quot;")+'" title="'+zh.replace(/"/g,"&quot;")+'">'+zh+'</option>').join("")+
           '</select>'+
         '</div>';
       }
