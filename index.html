@@ -712,7 +712,7 @@ const ITINERARY=[
   {time:"20:00",zh:"GOBDEULRAK咸德店",label:"晚餐・黑豬肉烤肉"},
   {time:"21:30",zh:"MJ度假村",label:"入住"},
 ],alt:["萬丈窟","月汀里海灘","咸德海灘","金寧海水浴場"]},
-{day:2,date:"7/24（五）",theme:"牛島環島（不早起）",stay:"民宿(Pyoseon 143-23)",items:[
+{day:2,date:"7/24（五）",theme:"牛島環島",stay:"民宿(Pyoseon 143-23)",items:[
   {time:"約10:00",zh:"城山港",label:"搭渡輪往牛島"},
   {time:"10:30",zh:"牛島西濱白沙灘",label:"沙灘"},
   {time:"12:00",zh:"UDORO 93",label:"午餐・烏龍麵"},
@@ -774,19 +774,18 @@ function setSBMode(mode){
   document.getElementById("itinpanel").classList.toggle("show",isItin);
   if(isItin)renderItinBody(daySel);
 }
-function getMealAlts(it,day){
+function getMealAlts(it){
   const p=DATA.find(x=>x.zh===it.zh);
   const cat=it.altCat||(p?p.cat:null);
-  if(cat!=="美食"&&cat!=="咖啡廳")return[];
-  const sameRoute=DATA.filter(x=>x.cat===cat&&p&&x.route===p.route&&x.day&&x.day.includes(day)&&x.zh!==it.zh);
-  const pool=sameRoute.length?sameRoute:DATA.filter(x=>x.cat===cat&&x.day&&x.day.includes(day)&&x.zh!==it.zh);
+  if(!p||(cat!=="美食"&&cat!=="咖啡廳"))return[];
+  const pool=DATA.filter(x=>x.cat===cat&&x.route===p.route&&x.zh!==it.zh);
   return pool.map(x=>x.zh).sort((a,b)=>a.localeCompare(b,"zh-Hant"));
 }
 function itinDayHtml(d){
   const rows=d.items.map(it=>{
     const p=DATA.find(x=>x.zh===it.zh);
     const em=p?EMO[p.cat]:"📍";
-    const alts=it.noAlts?[]:getMealAlts(it,d.day);
+    const alts=it.noAlts?[]:getMealAlts(it);
     let altsHtml="";
     if(alts.length){
       if(alts.length<=6){
