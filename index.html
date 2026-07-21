@@ -198,6 +198,42 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 /* ─ Drag handle (mobile) ─ */
 .pc-drag{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 6px}
 
+/* ═══ 行程檢視 ITINERARY VIEW ═══ */
+.sb-tabs{display:flex;gap:4px;margin-bottom:10px}
+.sb-tab{flex:1;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;color:var(--sub);background:var(--bg);border:1.5px solid transparent;cursor:pointer;transition:background .12s,color .12s}
+.sb-tab:hover{color:var(--text)}
+.sb-tab.active{background:var(--accent-l);color:var(--accent);border-color:var(--accent)}
+.itin-panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.itin-panel.show{display:flex}
+.itin-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.itin-body::-webkit-scrollbar{width:3px}
+.itin-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.itin-daygroup{margin-bottom:24px;padding-bottom:20px;border-bottom:1px dashed var(--border)}
+.itin-daygroup:last-child{border-bottom:none;margin-bottom:0}
+.itin-daygroup-hd{font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.5px;margin-bottom:6px}
+.itin-theme{font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px}
+.itin-stay{font-size:12px;color:var(--sub);margin-bottom:16px;display:flex;align-items:center;gap:5px}
+.itin-list{display:flex;flex-direction:column;gap:8px}
+.itin-item{cursor:pointer}
+.itin-card-hd{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11px;font-weight:700;color:var(--muted)}
+.itin-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;box-shadow:var(--shadow-sm);transition:box-shadow .12s,border-color .12s;min-width:0}
+.itin-item:hover .itin-card{box-shadow:var(--shadow-md);border-color:#d8d0c2}
+.itin-item:hover .itin-card{box-shadow:var(--shadow-md);border-color:#d8d0c2}
+.itin-label{font-size:13px;font-weight:700;color:var(--text)}
+.itin-name{font-size:12px;color:var(--sub);margin-top:2px}
+.itin-note{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+.itin-opts{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.itin-opts-lbl{font-size:10.5px;color:var(--muted);font-weight:600;margin-right:2px}
+.itin-opt-chip{font-size:10.5px;padding:3px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--sub);font-weight:600;cursor:pointer}
+.itin-opt-chip:hover{border-color:var(--accent);color:var(--accent)}
+.itin-opt-select{-webkit-appearance:none;appearance:none;font-size:11.5px;padding:6px 28px 6px 10px;border-radius:20px;background:var(--bg) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" fill="none" stroke="%23a39a8c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat right 10px center;border:1.5px solid var(--border);color:var(--text);font-weight:600;cursor:pointer;max-width:100%;font-family:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:border-color .12s,background-color .12s}
+.itin-opt-select:hover{border-color:var(--accent);background-color:var(--accent-l)}
+.itin-opt-select:focus{outline:none;border-color:var(--accent)}
+.itin-alt{margin-top:22px;padding-top:16px;border-top:1px dashed var(--border)}
+.itin-alt-title{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px}
+.itin-alt-chips{display:flex;flex-wrap:wrap;gap:6px}
+.itin-alt-chip{font-size:11px;padding:5px 10px;border-radius:20px;background:var(--accent-l);color:var(--accent);font-weight:600;cursor:pointer;border:none}
+
 /* ═══ MOBILE ═══ */
 @media(max-width:640px){
   .menu-btn{display:flex}
@@ -273,7 +309,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
   <!-- SIDEBAR -->
   <div class="sidebar" id="sb">
     <div class="sb-head">
-      <div class="sb-head-row">
+      <div class="sb-tabs">
+        <button class="sb-tab active" id="sbtab-list" onclick="setSBMode('list')">📍 地點列表</button>
+        <button class="sb-tab" id="sbtab-itin" onclick="setSBMode('itin')">📅 行程</button>
+      </div>
+      <div class="sb-head-row" id="sbHeadRow">
         <span class="sb-title" id="sbt">所有地點</span>
         <span style="display:flex;gap:8px;align-items:center">
           <span class="sb-cnt" id="sbc"></span>
@@ -286,6 +326,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
       </div>
     </div>
     <div class="plist" id="pl"></div>
+    <div class="itin-panel" id="itinpanel">
+      <div class="itin-body" id="itinbody"></div>
+    </div>
   </div>
 
   <!-- MAP -->
@@ -327,7 +370,7 @@ function brandOf(p){
   return null;
 }
 // 咖啡廳裡「可以隨手帶著買走的餅乾/飲料」類型（外帶為主，不是坐下來喝咖啡的店），也用方形跟一般咖啡廳做視覺區分
-const GRABGO_CAFE=["Paris Baguette","Compose Coffee","Abebe Bakery","umu布丁","濟州鮮榨果汁","Mongle"];
+const GRABGO_CAFE=["Paris Baguette","Compose Coffee","Abebe Bakery","umu布丁","濟州鮮榨果汁","Mongle","Audrant Bakery","Mega Coffee"];
 function isGrabGoCafe(p){
   if(p.cat!=="咖啡廳") return false;
   const n=p.zh||"";
@@ -434,6 +477,7 @@ function selectDay(btn){
   document.querySelectorAll(".chip-day").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   closePopup(null);renderMarkers();renderList();
+  if(sbMode==="itin")renderItinBody(daySel);
 }
 
 // ── NOTE PARSER ───────────────────────────────
@@ -650,6 +694,165 @@ function toggleRoute(btn){
   syncGroupUI();
   closePopup(null);renderMarkers();renderList();
 }
+
+// ═══ 行程檢視 ITINERARY ═══
+const ITINERARY=[
+{day:1,date:"7/23（四）",theme:"抵達・市區觀光購物，晚上驅車東北入住",stay:"MJ度假村",items:[
+  {time:"09:45",zh:"濟州國際機場",label:"班機抵達（06:40桃園起飛），領租車"},
+  {time:"11:30",label:"午餐",openCat:"美食",openRoute:"市區"},
+  {time:"13:00",zh:"道頭洞彩虹海岸道路",label:"彩虹護欄拍照"},
+  {time:"14:30",zh:"七星路購物街",label:"購物"},
+  {time:"15:30",zh:"保健路購物街",label:"購物"},
+  {time:"17:00",zh:"東門市場",label:"逛街・小吃（當晚餐）"},
+  {time:"18:30",label:"驅車前往東北（約1小時）"},
+  {time:"20:00",zh:"MJ度假村",label:"入住"},
+]},
+{day:2,date:"7/24（五）",theme:"東北海岸線・追晚霞",stay:"民宿(Pyoseon 143-23)",items:[
+  {time:"09:30",zh:"Audrant Bakery",label:"外帶就走",noAlts:true},
+  {time:"10:30",zh:"London Bagel Museum",label:"外帶內用皆可",noAlts:true},
+  {time:"11:30",zh:"Mongle",label:"外帶就走",noAlts:true},
+  {time:"13:00",label:"午餐",openCat:"美食",openRoute:"東北"},
+  {time:"15:00",label:"海灘散步",openNames:["月汀里海灘","咸德海灘","金寧海水浴場","杏源海灘(柯南海灘)"]},
+  {time:"18:00",label:"海景咖啡，坐著待到晚霞",openCat:"咖啡廳",openRoute:"東北"},
+  {time:"20:00",label:"晚餐",openCat:"美食",openRoute:"東北"},
+  {time:"20:45",label:"驅車前往表善（約45分鐘）"},
+  {time:"21:30",zh:"民宿(Pyoseon 143-23)",label:"入住（表善第一晚）"},
+],alt:["萬丈窟"]},
+{day:3,date:"7/25（六）",theme:"濟州童話村・Snoopy Garden・城山日出峰",stay:"Jeju Ri House",items:[
+  {time:"10:00",zh:"濟州童話村（附吉卜力展）",label:"吉卜力展＋童話園區"},
+  {time:"12:00",label:"午餐",openCat:"美食",openRoute:"東南"},
+  {time:"13:30",zh:"Snoopy Garden",label:"史努比花園"},
+  {time:"17:00",zh:"城山日出峰",label:"登頂看晚霞"},
+  {time:"19:30",label:"晚餐",openCat:"美食",openRoute:"東南"},
+  {time:"21:00",zh:"Jeju Ri House",label:"入住"},
+]},
+{day:4,date:"7/26（日）",theme:"牛島環島・濟州水上星球",stay:"民宿(Pyoseon 143-23)",items:[
+  {time:"09:00",zh:"城山港",label:"搭渡輪往牛島"},
+  {time:"09:30",zh:"牛島西濱白沙灘",label:"沙灘"},
+  {time:"11:00",zh:"Udo Sand",label:"招牌餅乾"},
+  {time:"12:00",label:"午餐",openCat:"美食",openRoute:"牛島"},
+  {time:"13:00",zh:"牛島下古水洞海灘",label:"沙灘"},
+  {time:"13:45",zh:"牛島燈塔公園",label:"景觀台"},
+  {time:"14:15",zh:"黑沙灘（檢滅來海水浴場）",label:"沙灘"},
+  {time:"15:00",zh:"牛島天津港",label:"搭渡輪返回城山"},
+  {time:"16:00",zh:"濟州水上星球",label:"水族館"},
+  {time:"18:00",label:"晚餐",openCat:"美食",openRoute:"東南"},
+  {time:"20:00",zh:"民宿(Pyoseon 143-23)",label:"入住（表善第二晚）"},
+],alt:["海女博物館","Yumin Art Nouveau Collection","Glass House"]},
+{day:5,date:"7/27（一）",theme:"跨島西移日：西歸浦・安德",stay:"楮旨文化藝術村柑橘園民宿",items:[
+  {time:"07:00",zh:"鴛鴦瀑布",label:"透澈藍綠色溪谷瀑布"},
+  {time:"11:00",label:"午餐",openCat:"美食",openRoute:"西南"},
+  {time:"13:00",zh:"Osulloc茶博物館",label:"綠茶博物館"},
+  {time:"16:00",zh:"M1971遊艇俱樂部",label:"追海豚遊艇體驗（需先預約時段）"},
+  {time:"18:30",label:"晚餐",openCat:"美食",openRoute:"西線沿海"},
+  {time:"20:30",zh:"楮旨文化藝術村柑橘園民宿",label:"入住"},
+],alt:["Hello Kitty Island","山茶花之丘","海豚點","西歸浦偶來市場"]},
+{day:6,date:"7/28（二）",theme:"9.81公園・Arte Museum・挾才或涯月",stay:"龍馬路公寓民宿",items:[
+  {time:"09:30",zh:"9.81公園",label:"無動力重力賽車樂園"},
+  {time:"11:00",zh:"Arte Museum Island Jeju",label:"沉浸式數位藝術館"},
+  {time:"13:00",label:"午餐",openCat:"美食",openRoute:"西線沿海"},
+  {time:"14:30",label:"二選一",openNames:["挾才海水浴場","涯月咖啡街"]},
+  {time:"17:30",label:"市區逛街，買伴手禮",openCat:"購物",openRoute:"市區"},
+  {time:"19:00",label:"晚餐",openCat:"美食",openRoute:"市區"},
+  {time:"20:30",zh:"濟州國際機場",label:"還車"},
+  {time:"21:00",zh:"龍馬路公寓民宿",label:"叫車前往，入住（最後一晚）"},
+],alt:["新星朋友","Akkomi伴手禮店"]},
+{day:7,date:"7/29（三）",theme:"賦歸",stay:null,items:[
+  {time:"約08:30",zh:"龍馬路公寓民宿",label:"退房，叫車前往機場（車已於28日晚還）"},
+  {time:"約09:00",zh:"濟州國際機場",label:"辦理登機（10:30起飛，11:35抵達桃園）"},
+]},
+];
+let sbMode="list";
+function setSBMode(mode){
+  sbMode=mode;
+  const isItin=mode==="itin";
+  document.getElementById("sbtab-list").classList.toggle("active",!isItin);
+  document.getElementById("sbtab-itin").classList.toggle("active",isItin);
+  document.getElementById("pl").style.display=isItin?"none":"";
+  document.getElementById("sbHeadRow").style.display=isItin?"none":"";
+  document.getElementById("sw").style.display=isItin?"none":"";
+  document.getElementById("itinpanel").classList.toggle("show",isItin);
+  if(isItin)renderItinBody(daySel);
+}
+function getMealAlts(it){
+  const p=DATA.find(x=>x.zh===it.zh);
+  const cat=it.altCat||(p?p.cat:null);
+  if(!p||(cat!=="美食"&&cat!=="咖啡廳"))return[];
+  let pool=DATA.filter(x=>x.cat===cat&&x.route===p.route&&x.zh!==it.zh);
+  if(cat==="咖啡廳")pool=pool.filter(x=>!isGrabGoCafe(x));
+  return pool.map(x=>x.zh).sort((a,b)=>a.localeCompare(b,"zh-Hant"));
+}
+function getOpenOptions(cat,route){
+  let pool=DATA.filter(x=>x.cat===cat&&x.route===route);
+  if(cat==="咖啡廳")pool=pool.filter(x=>!isGrabGoCafe(x));
+  return pool.map(x=>x.zh).sort((a,b)=>a.localeCompare(b,"zh-Hant"));
+}
+function optsHtml(names,lbl){
+  if(!names.length)return"";
+  if(names.length<=10){
+    return '<div class="itin-opts"><span class="itin-opts-lbl">'+lbl+'：</span>'+
+      names.map(zh=>'<button class="itin-opt-chip" onclick="event.stopPropagation();itinJump(\''+zh.replace(/'/g,"\\'")+'\')">'+zh+'</button>').join("")+
+    '</div>';
+  }
+  return '<div class="itin-opts"><span class="itin-opts-lbl">'+lbl+'（共'+names.length+'間）：</span>'+
+    '<select class="itin-opt-select" title="選一個看看…" onclick="event.stopPropagation()" onchange="this.title=this.value||\'選一個看看…\';if(this.value)itinJump(this.value)">'+
+    '<option value="">選一個看看…</option>'+
+    names.map(zh=>'<option value="'+zh.replace(/"/g,"&quot;")+'" title="'+zh.replace(/"/g,"&quot;")+'">'+zh+'</option>').join("")+
+    '</select>'+
+  '</div>';
+}
+function itinDayHtml(d){
+  const rows=d.items.map(it=>{
+    if(!it.zh){
+      const em=EMO[it.openCat]||"📍";
+      const options=it.openNames||getOpenOptions(it.openCat,it.openRoute);
+      return '<div class="itin-item">'+
+        '<div class="itin-card">'+
+          '<div class="itin-card-hd">'+em+' '+it.time+'</div>'+
+          '<div class="itin-label">'+it.label+'</div>'+
+          optsHtml(options,"選一個")+
+        '</div>'+
+      '</div>';
+    }
+    const p=DATA.find(x=>x.zh===it.zh);
+    const em=p?EMO[p.cat]:"📍";
+    const alts=it.noAlts?[]:getMealAlts(it);
+    return '<div class="itin-item" onclick="itinJump(\''+it.zh.replace(/'/g,"\\'")+'\')">'+
+      '<div class="itin-card">'+
+        '<div class="itin-card-hd">'+em+' '+it.time+'</div>'+
+        '<div class="itin-label">'+it.label+'</div>'+
+        '<div class="itin-name">'+it.zh+'</div>'+
+        optsHtml(alts,"附近還可選")+
+      '</div>'+
+    '</div>';
+  }).join("");
+  const altHtml=d.alt?(
+    '<div class="itin-alt"><div class="itin-alt-title">時間充裕可加碼</div><div class="itin-alt-chips">'+
+    d.alt.map(zh=>'<button class="itin-alt-chip" onclick="itinJump(\''+zh.replace(/'/g,"\\'")+'\')">'+zh+'</button>').join("")+
+    '</div></div>'
+  ):"";
+  return '<div class="itin-theme">'+d.theme+'</div>'+
+    '<div class="itin-stay">'+(d.stay?"🏨 住宿："+d.stay:"")+'</div>'+
+    '<div class="itin-list">'+rows+'</div>'+
+    altHtml;
+}
+function renderItinBody(day){
+  const body=document.getElementById("itinbody");
+  if(!day){
+    body.innerHTML=ITINERARY.map(d=>
+      '<div class="itin-daygroup"><div class="itin-daygroup-hd">DAY'+d.day+' · '+d.date+'</div>'+itinDayHtml(d)+'</div>'
+    ).join("");
+    return;
+  }
+  const d=ITINERARY.find(x=>x.day===day);
+  body.innerHTML=itinDayHtml(d);
+}
+function itinJump(zh){
+  const idx=DATA.findIndex(d=>d.zh===zh);
+  if(idx===-1)return;
+  selectPlace(idx);
+}
+
 renderMarkers();
 renderList();
 </script>
