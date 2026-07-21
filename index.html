@@ -199,12 +199,13 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .pc-drag{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 6px}
 
 /* ═══ 行程檢視 ITINERARY VIEW ═══ */
-.itin-btn{display:flex;align-items:center;gap:5px;height:36px;padding:0 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;transition:background .12s}
-.itin-btn:hover{background:rgba(255,255,255,.16)}
-.itin-btn.active{background:var(--accent);border-color:var(--accent)}
-.itin-view{position:absolute;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column}
-.itin-view.show{display:flex}
-.itin-days{height:var(--fh);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding:0 14px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;box-shadow:var(--shadow-sm)}
+.sb-tabs{display:flex;gap:4px;margin-bottom:10px}
+.sb-tab{flex:1;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;color:var(--sub);background:var(--bg);border:1.5px solid transparent;cursor:pointer;transition:background .12s,color .12s}
+.sb-tab:hover{color:var(--text)}
+.sb-tab.active{background:var(--accent-l);color:var(--accent);border-color:var(--accent)}
+.itin-panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.itin-panel.show{display:flex}
+.itin-days{background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding:10px 14px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;flex-wrap:wrap}
 .itin-days::-webkit-scrollbar{display:none}
 .itin-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 .itin-theme{font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px}
@@ -256,7 +257,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
     <div class="topbar-title">濟州島 <b>7天6夜</b> 旅遊地圖</div>
     <div class="topbar-sub">7/23–7/29 · 4人 · 順時針自駕</div>
   </div>
-  <button class="itin-btn" id="itinbtn" onclick="toggleItinView()">📅 行程</button>
   <button class="menu-btn" id="menubtn" onclick="toggleSB()">☰</button>
 </div>
 
@@ -304,16 +304,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 <div class="main" id="main">
   <div class="soverlay" id="sov" onclick="closeSB()"></div>
 
-  <!-- ITINERARY VIEW -->
-  <div class="itin-view" id="itinview">
-    <div class="itin-days" id="itindays"></div>
-    <div class="itin-body" id="itinbody"></div>
-  </div>
-
   <!-- SIDEBAR -->
   <div class="sidebar" id="sb">
     <div class="sb-head">
-      <div class="sb-head-row">
+      <div class="sb-tabs">
+        <button class="sb-tab active" id="sbtab-list" onclick="setSBMode('list')">📍 地點列表</button>
+        <button class="sb-tab" id="sbtab-itin" onclick="setSBMode('itin')">📅 行程</button>
+      </div>
+      <div class="sb-head-row" id="sbHeadRow">
         <span class="sb-title" id="sbt">所有地點</span>
         <span style="display:flex;gap:8px;align-items:center">
           <span class="sb-cnt" id="sbc"></span>
@@ -326,6 +324,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
       </div>
     </div>
     <div class="plist" id="pl"></div>
+    <div class="itin-panel" id="itinpanel">
+      <div class="itin-days" id="itindays"></div>
+      <div class="itin-body" id="itinbody"></div>
+    </div>
   </div>
 
   <!-- MAP -->
@@ -755,12 +757,15 @@ const ITINERARY=[
 ]},
 ];
 let itinDay=1;
-function toggleItinView(){
-  const v=document.getElementById("itinview"),b=document.getElementById("itinbtn");
-  const show=!v.classList.contains("show");
-  v.classList.toggle("show",show);
-  b.classList.toggle("active",show);
-  if(show){renderItinDays();renderItinBody(itinDay);}
+function setSBMode(mode){
+  const isItin=mode==="itin";
+  document.getElementById("sbtab-list").classList.toggle("active",!isItin);
+  document.getElementById("sbtab-itin").classList.toggle("active",isItin);
+  document.getElementById("pl").style.display=isItin?"none":"";
+  document.getElementById("sbHeadRow").style.display=isItin?"none":"";
+  document.getElementById("sw").style.display=isItin?"none":"";
+  document.getElementById("itinpanel").classList.toggle("show",isItin);
+  if(isItin){renderItinDays();renderItinBody(itinDay);}
 }
 function renderItinDays(){
   document.getElementById("itindays").innerHTML=ITINERARY.map(d=>
@@ -803,11 +808,7 @@ function renderItinBody(day){
 function itinJump(zh){
   const idx=DATA.findIndex(d=>d.zh===zh);
   if(idx===-1)return;
-  document.getElementById("itinview").classList.remove("show");
-  document.getElementById("itinbtn").classList.remove("active");
-  const p=DATA[idx];
-  map.setView([p.lat,p.lng],15);
-  selIdx=idx;renderMarkers();renderList();showPopup(idx);
+  selectPlace(idx);
 }
 
 renderMarkers();
