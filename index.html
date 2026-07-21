@@ -704,9 +704,9 @@ const ITINERARY=[
 {day:1,date:"7/23（四）",theme:"抵達・東北海岸線・追晚霞",stay:"MJ度假村",items:[
   {time:"約11:00",zh:"濟州國際機場",label:"抵達，領租車"},
   {time:"12:30",zh:"明浩豚肉 機場店",label:"午餐"},
-  {time:"14:00",zh:"Audrant Bakery",label:"必買，外帶就走"},
+  {time:"14:00",zh:"Audrant Bakery",label:"必買，外帶就走",noAlts:true},
   {time:"15:00",zh:"London Bagel Museum",label:"必去，內用或外帶皆可"},
-  {time:"16:00",zh:"Mongle",label:"必買，外帶就走"},
+  {time:"16:00",zh:"Mongle",label:"必買，外帶就走",noAlts:true},
   {time:"17:30",zh:"杏源海灘(柯南海灘)",label:"海灘散步，等晚霞"},
   {time:"19:00",zh:"Layover",label:"海景咖啡，坐著待到晚霞"},
   {time:"20:00",zh:"GOBDEULRAK咸德店",label:"晚餐・黑豬肉烤肉"},
@@ -786,7 +786,7 @@ function itinDayHtml(d){
   const rows=d.items.map(it=>{
     const p=DATA.find(x=>x.zh===it.zh);
     const em=p?EMO[p.cat]:"📍";
-    const alts=getMealAlts(it,d.day);
+    const alts=it.noAlts?[]:getMealAlts(it,d.day);
     let altsHtml="";
     if(alts.length){
       if(alts.length<=6){
