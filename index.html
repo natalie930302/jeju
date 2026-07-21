@@ -222,6 +222,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .itin-label{font-size:13px;font-weight:700;color:var(--text)}
 .itin-name{font-size:12px;color:var(--sub);margin-top:2px}
 .itin-note{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+.itin-opts{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.itin-opts-lbl{font-size:10.5px;color:var(--muted);font-weight:600;margin-right:2px}
+.itin-opt-chip{font-size:10.5px;padding:3px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--sub);font-weight:600;cursor:pointer}
+.itin-opt-chip:hover{border-color:var(--accent);color:var(--accent)}
 .itin-alt{margin-top:22px;padding-top:16px;border-top:1px dashed var(--border)}
 .itin-alt-title{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px}
 .itin-alt-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -691,12 +695,12 @@ function toggleRoute(btn){
 const ITINERARY=[
 {day:1,date:"7/23（四）",theme:"抵達・東北海岸線",stay:"MJ度假村",items:[
   {time:"約11:00",zh:"濟州國際機場",label:"抵達，領租車"},
-  {time:"12:30",zh:"明浩豚肉 機場店",label:"午餐"},
+  {time:"12:30",zh:"明浩豚肉 機場店",label:"午餐",alts:["Dotdam","濟州島優待 노형本店","Taco Namatata"]},
   {time:"14:00",zh:"萬丈窟",label:"熔岩洞穴"},
   {time:"15:30",zh:"月汀里海灘",label:"海灘散步"},
-  {time:"16:30",zh:"Layover",label:"海景咖啡"},
+  {time:"16:30",zh:"Layover",label:"海景咖啡",alts:["Mongle"]},
   {time:"18:00",zh:"咸德海灘",label:"看夕陽"},
-  {time:"19:00",zh:"GOBDEULRAK咸德店",label:"晚餐・黑豬肉烤肉"},
+  {time:"19:00",zh:"GOBDEULRAK咸德店",label:"晚餐・黑豬肉烤肉",alts:["咸德鯖魚包飯","咸德 Geuttae那家"]},
   {time:"21:00",zh:"MJ度假村",label:"入住"},
 ]},
 {day:2,date:"7/24（五）",theme:"城山日出峰・牛島環島",stay:"民宿(Pyoseon 143-23)",items:[
@@ -704,46 +708,46 @@ const ITINERARY=[
   {time:"09:00",zh:"城山港",label:"搭渡輪往牛島"},
   {time:"09:30",zh:"牛島西濱白沙灘",label:"沙灘"},
   {time:"11:00",zh:"牛島下古水洞海灘",label:"沙灘"},
-  {time:"12:30",zh:"UDORO 93",label:"午餐・烏龍麵"},
-  {time:"14:00",zh:"Udo Sand",label:"海景咖啡"},
+  {time:"12:30",zh:"UDORO 93",label:"午餐・烏龍麵",alts:["Sumsonai 島小夥","On-Off"]},
+  {time:"14:00",zh:"Udo Sand",label:"海景咖啡",alts:["Blanc Rocher"]},
   {time:"15:00",zh:"牛島燈塔公園",label:"景觀台"},
   {time:"16:00",zh:"黑沙灘（檢滅來海水浴場）",label:"沙灘"},
   {time:"17:00",zh:"牛島天津港",label:"搭渡輪返回城山"},
-  {time:"18:30",zh:"濟州本然 黑豬肉 城山本店",label:"晚餐・黑豬肉烤肉"},
+  {time:"18:30",zh:"濟州本然 黑豬肉 城山本店",label:"晚餐・黑豬肉烤肉",alts:["金點城山黑豬肉","城山雙魚座"]},
   {time:"20:30",zh:"民宿(Pyoseon 143-23)",label:"入住（表善第一晚）"},
 ]},
 {day:3,date:"7/25（六）",theme:"濟州童話村・Snoopy Garden・海女博物館",stay:"Jeju Ri House",items:[
   {time:"09:30",zh:"濟州童話村（附吉卜力展）",label:"吉卜力展＋童話園區"},
-  {time:"12:00",zh:"鹽Bachi順伊家",label:"午餐・章魚拌麵"},
+  {time:"12:00",zh:"鹽Bachi順伊家",label:"午餐・章魚拌麵",alts:["Batata食卓","表善烏龍麵店"]},
   {time:"13:30",zh:"Snoopy Garden",label:"史努比花園"},
   {time:"16:00",zh:"海女博物館",label:"海女文化展"},
-  {time:"18:00",zh:"Roy & May",label:"晚餐・中式家常菜"},
+  {time:"18:00",zh:"Roy & May",label:"晚餐・中式家常菜",alts:["城山雙魚座","金點城山黑豬肉"]},
   {time:"20:00",zh:"Jeju Ri House",label:"入住"},
 ]},
 {day:4,date:"7/26（日）",theme:"濟州水上星球・섭지코지藝術群",stay:"民宿(Pyoseon 143-23)",items:[
   {time:"09:30",zh:"濟州水上星球",label:"水族館"},
-  {time:"12:00",zh:"城山雙魚座",label:"午餐・生魚片"},
+  {time:"12:00",zh:"城山雙魚座",label:"午餐・生魚片",alts:["金點城山黑豬肉","Batata食卓"]},
   {time:"13:30",zh:"Yumin Art Nouveau Collection",label:"新藝術博物館"},
   {time:"14:30",zh:"Glass House",label:"玻璃屋藝廊"},
-  {time:"18:00",zh:"表善烏龍麵店",label:"晚餐・烏龍麵"},
+  {time:"18:00",zh:"表善烏龍麵店",label:"晚餐・烏龍麵",alts:["鹽Bachi順伊家","Batata食卓"]},
   {time:"20:00",zh:"民宿(Pyoseon 143-23)",label:"入住（表善第二晚）"},
 ]},
 {day:5,date:"7/27（一）",theme:"跨島西移日：西歸浦・安德・翰林",stay:"楮旨文化藝術村柑橘園民宿",items:[
   {time:"09:00",zh:"西歸浦偶來市場",label:"早市（早上最新鮮）"},
   {time:"11:00",zh:"山茶花之丘",label:"카멜리아힐 花園"},
-  {time:"13:00",zh:"碼頭食堂",label:"午餐・生魚片"},
+  {time:"13:00",zh:"碼頭食堂",label:"午餐・生魚片",alts:["熟成到 中文店","黑豬肉海鮮三合 西歸浦올레市場店"]},
   {time:"15:30",zh:"挾才海水浴場",label:"沙灘・夕陽"},
-  {time:"18:30",zh:"돈해상 濟州翰林協才黑豬肉",label:"晚餐・海景黑豬肉烤肉"},
+  {time:"18:30",zh:"돈해상 濟州翰林協才黑豬肉",label:"晚餐・海景黑豬肉烤肉",alts:["涯月帶魚 暗行御史"]},
   {time:"20:30",zh:"楮旨文化藝術村柑橘園民宿",label:"入住"},
 ],alt:["Hello Kitty Island","M1971遊艇俱樂部","鴛鴦瀑布","海豚點","9.81公園","Arte Museum Island Jeju"]},
 {day:6,date:"7/28（二）",theme:"翰林・涯月咖啡街・市區購物",stay:"龍馬路公寓民宿",items:[
   {time:"09:30",zh:"Osulloc茶博物館",label:"綠茶博物館＋商店"},
-  {time:"11:00",zh:"涯月咖啡街",label:"海景咖啡街"},
+  {time:"11:00",zh:"涯月咖啡街",label:"海景咖啡街",alts:["Haejigae","Haru Film Aewol","SLOWBOAT Atelier","Lazy Pump","Team Blow"]},
   {time:"13:00",zh:"道頭洞彩虹海岸道路",label:"彩虹護欄拍照"},
   {time:"14:00",zh:"東門市場",label:"逛街・小吃"},
   {time:"16:00",zh:"七星路購物街",label:"購物"},
   {time:"17:00",zh:"Akkomi伴手禮店",label:"角色雜貨・伴手禮"},
-  {time:"18:30",zh:"Notameno壽喜燒 濟州機場本店",label:"晚餐・壽喜燒"},
+  {time:"18:30",zh:"Notameno壽喜燒 濟州機場本店",label:"晚餐・壽喜燒",alts:["Dotdam","濟州島優待 노형本店","山友情生牛肉"]},
   {time:"20:30",zh:"龍馬路公寓民宿",label:"入住（最後一晚）"},
 ],alt:["9.81公園","Arte Museum Island Jeju","新星朋友"]},
 {day:7,date:"7/29（三）",theme:"賦歸",stay:null,items:[
@@ -770,12 +774,18 @@ function renderItinBody(day){
   const rows=d.items.map(it=>{
     const p=DATA.find(x=>x.zh===it.zh);
     const em=p?EMO[p.cat]:"📍";
+    const altsHtml=it.alts?(
+      '<div class="itin-opts"><span class="itin-opts-lbl">附近還可選：</span>'+
+      it.alts.map(zh=>'<button class="itin-opt-chip" onclick="event.stopPropagation();itinJump(\''+zh.replace(/'/g,"\\'")+'\')">'+zh+'</button>').join("")+
+      '</div>'
+    ):"";
     return '<div class="itin-item" onclick="itinJump(\''+it.zh.replace(/'/g,"\\'")+'\')">'+
       '<div class="itin-time">'+it.time+'</div>'+
       '<div class="itin-dot">'+em+'</div>'+
       '<div class="itin-card">'+
         '<div class="itin-label">'+it.label+'</div>'+
         '<div class="itin-name">'+it.zh+'</div>'+
+        altsHtml+
       '</div>'+
     '</div>';
   }).join("");
