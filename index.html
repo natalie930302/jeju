@@ -374,7 +374,7 @@ function brandOf(p){
   return null;
 }
 // 咖啡廳裡「可以隨手帶著買走的餅乾/飲料」類型（外帶為主，不是坐下來喝咖啡的店），也用方形跟一般咖啡廳做視覺區分
-const GRABGO_CAFE=["Paris Baguette","Compose Coffee","Abebe Bakery","umu布丁","濟州鮮榨果汁","Mongle"];
+const GRABGO_CAFE=["Paris Baguette","Compose Coffee","Abebe Bakery","umu布丁","濟州鮮榨果汁","Mongle","Audrant Bakery","Mega Coffee"];
 function isGrabGoCafe(p){
   if(p.cat!=="咖啡廳") return false;
   const n=p.zh||"";
@@ -778,7 +778,8 @@ function getMealAlts(it){
   const p=DATA.find(x=>x.zh===it.zh);
   const cat=it.altCat||(p?p.cat:null);
   if(!p||(cat!=="美食"&&cat!=="咖啡廳"))return[];
-  const pool=DATA.filter(x=>x.cat===cat&&x.route===p.route&&x.zh!==it.zh);
+  let pool=DATA.filter(x=>x.cat===cat&&x.route===p.route&&x.zh!==it.zh);
+  if(cat==="咖啡廳")pool=pool.filter(x=>!isGrabGoCafe(x));
   return pool.map(x=>x.zh).sort((a,b)=>a.localeCompare(b,"zh-Hant"));
 }
 function itinDayHtml(d){
