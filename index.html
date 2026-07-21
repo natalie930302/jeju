@@ -703,11 +703,11 @@ const ITINERARY=[
   {time:"14:00",zh:"Audrant Bakery",label:"外帶就走",noAlts:true},
   {time:"15:00",zh:"London Bagel Museum",label:"外帶內用皆可",noAlts:true},
   {time:"16:00",zh:"Mongle",label:"外帶就走",noAlts:true},
-  {time:"17:30",zh:"杏源海灘(柯南海灘)",label:"海灘散步，等晚霞"},
+  {time:"17:30",label:"海灘散步，等晚霞",openNames:["月汀里海灘","咸德海灘","金寧海水浴場","杏源海灘(柯南海灘)"]},
   {time:"19:00",label:"海景咖啡，坐著待到晚霞",openCat:"咖啡廳",openRoute:"東北"},
   {time:"20:00",label:"晚餐",openCat:"美食",openRoute:"東北"},
   {time:"21:30",zh:"MJ度假村",label:"入住"},
-],alt:["萬丈窟","月汀里海灘","咸德海灘","金寧海水浴場"]},
+],alt:["萬丈窟"]},
 {day:2,date:"7/24（五）",theme:"牛島環島",stay:"民宿(Pyoseon 143-23)",items:[
   {time:"約10:00",zh:"城山港",label:"搭渡輪往牛島"},
   {time:"10:30",zh:"牛島西濱白沙灘",label:"沙灘"},
@@ -787,7 +787,7 @@ function getOpenOptions(cat,route){
 }
 function optsHtml(names,lbl){
   if(!names.length)return"";
-  if(names.length<=6){
+  if(names.length<=10){
     return '<div class="itin-opts"><span class="itin-opts-lbl">'+lbl+'：</span>'+
       names.map(zh=>'<button class="itin-opt-chip" onclick="event.stopPropagation();itinJump(\''+zh.replace(/'/g,"\\'")+'\')">'+zh+'</button>').join("")+
     '</div>';
@@ -803,12 +803,12 @@ function itinDayHtml(d){
   const rows=d.items.map(it=>{
     if(!it.zh){
       const em=EMO[it.openCat]||"📍";
-      const options=getOpenOptions(it.openCat,it.openRoute);
+      const options=it.openNames||getOpenOptions(it.openCat,it.openRoute);
       return '<div class="itin-item">'+
         '<div class="itin-card">'+
           '<div class="itin-card-hd">'+em+' '+it.time+'</div>'+
           '<div class="itin-label">'+it.label+'</div>'+
-          optsHtml(options,"選一家")+
+          optsHtml(options,"選一個")+
         '</div>'+
       '</div>';
     }
