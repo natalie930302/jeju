@@ -205,9 +205,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .sb-tab.active{background:var(--accent-l);color:var(--accent);border-color:var(--accent)}
 .itin-panel{display:none;flex-direction:column;flex:1;overflow:hidden}
 .itin-panel.show{display:flex}
-.itin-days{background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding:10px 14px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;flex-wrap:wrap}
-.itin-days::-webkit-scrollbar{display:none}
 .itin-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.itin-daygroup{margin-bottom:24px;padding-bottom:20px;border-bottom:1px dashed var(--border)}
+.itin-daygroup:last-child{border-bottom:none;margin-bottom:0}
+.itin-daygroup-hd{font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.5px;margin-bottom:6px}
 .itin-theme{font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px}
 .itin-stay{font-size:12px;color:var(--sub);margin-bottom:16px;display:flex;align-items:center;gap:5px}
 .itin-list{display:flex;flex-direction:column;position:relative}
@@ -325,7 +326,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
     </div>
     <div class="plist" id="pl"></div>
     <div class="itin-panel" id="itinpanel">
-      <div class="itin-days" id="itindays"></div>
       <div class="itin-body" id="itinbody"></div>
     </div>
   </div>
@@ -476,6 +476,7 @@ function selectDay(btn){
   document.querySelectorAll(".chip-day").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   closePopup(null);renderMarkers();renderList();
+  if(sbMode==="itin")renderItinBody(daySel);
 }
 
 // ── NOTE PARSER ───────────────────────────────
@@ -756,8 +757,9 @@ const ITINERARY=[
   {time:"依班機時間",zh:"濟州國際機場",label:"返還租車，前往機場"},
 ]},
 ];
-let itinDay=1;
+let sbMode="list";
 function setSBMode(mode){
+  sbMode=mode;
   const isItin=mode==="itin";
   document.getElementById("sbtab-list").classList.toggle("active",!isItin);
   document.getElementById("sbtab-itin").classList.toggle("active",isItin);
@@ -765,17 +767,9 @@ function setSBMode(mode){
   document.getElementById("sbHeadRow").style.display=isItin?"none":"";
   document.getElementById("sw").style.display=isItin?"none":"";
   document.getElementById("itinpanel").classList.toggle("show",isItin);
-  if(isItin){renderItinDays();renderItinBody(itinDay);}
+  if(isItin)renderItinBody(daySel);
 }
-function renderItinDays(){
-  document.getElementById("itindays").innerHTML=ITINERARY.map(d=>
-    '<button class="chip'+(d.day===itinDay?' active':'')+'" onclick="renderItinBody('+d.day+')">Day'+d.day+' '+d.date+'</button>'
-  ).join("");
-}
-function renderItinBody(day){
-  itinDay=day;
-  document.querySelectorAll("#itindays .chip").forEach((b,i)=>b.classList.toggle("active",ITINERARY[i].day===day));
-  const d=ITINERARY.find(x=>x.day===day);
+function itinDayHtml(d){
   const rows=d.items.map(it=>{
     const p=DATA.find(x=>x.zh===it.zh);
     const em=p?EMO[p.cat]:"📍";
@@ -799,11 +793,21 @@ function renderItinBody(day){
     d.alt.map(zh=>'<button class="itin-alt-chip" onclick="itinJump(\''+zh.replace(/'/g,"\\'")+'\')">'+zh+'</button>').join("")+
     '</div></div>'
   ):"";
-  document.getElementById("itinbody").innerHTML=
-    '<div class="itin-theme">'+d.theme+'</div>'+
+  return '<div class="itin-theme">'+d.theme+'</div>'+
     '<div class="itin-stay">'+(d.stay?"🏨 住宿："+d.stay:"")+'</div>'+
     '<div class="itin-list">'+rows+'</div>'+
     altHtml;
+}
+function renderItinBody(day){
+  const body=document.getElementById("itinbody");
+  if(!day){
+    body.innerHTML=ITINERARY.map(d=>
+      '<div class="itin-daygroup"><div class="itin-daygroup-hd">DAY'+d.day+' · '+d.date+'</div>'+itinDayHtml(d)+'</div>'
+    ).join("");
+    return;
+  }
+  const d=ITINERARY.find(x=>x.day===day);
+  body.innerHTML=itinDayHtml(d);
 }
 function itinJump(zh){
   const idx=DATA.findIndex(d=>d.zh===zh);
