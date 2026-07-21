@@ -697,26 +697,37 @@ function toggleRoute(btn){
 
 // ═══ 行程檢視 ITINERARY ═══
 const ITINERARY=[
-{day:1,date:"7/23（四）",theme:"抵達・東北海岸線・追晚霞",stay:"MJ度假村",items:[
+{day:1,date:"7/23（四）",theme:"抵達・市區購物，晚上驅車東北入住",stay:"MJ度假村",items:[
   {time:"09:45",zh:"濟州國際機場",label:"班機抵達（06:40桃園起飛），領租車"},
   {time:"11:30",label:"午餐",openCat:"美食",openRoute:"市區"},
-  {time:"14:00",zh:"Audrant Bakery",label:"外帶就走",noAlts:true},
-  {time:"15:00",zh:"London Bagel Museum",label:"外帶內用皆可",noAlts:true},
-  {time:"16:00",zh:"Mongle",label:"外帶就走",noAlts:true},
-  {time:"17:30",label:"海灘散步，等晚霞",openNames:["月汀里海灘","咸德海灘","金寧海水浴場","杏源海灘(柯南海灘)"]},
+  {time:"13:00",zh:"東門市場",label:"逛街・小吃"},
+  {time:"14:30",zh:"七星路購物街",label:"購物"},
+  {time:"15:30",zh:"保健路購物街",label:"購物"},
+  {time:"17:00",zh:"Akkomi伴手禮店",label:"角色雜貨・伴手禮"},
+  {time:"18:00",label:"晚餐",openCat:"美食",openRoute:"市區"},
+  {time:"19:30",label:"驅車前往東北（約1小時）"},
+  {time:"21:00",zh:"MJ度假村",label:"入住"},
+]},
+{day:2,date:"7/24（五）",theme:"東北海岸線・追晚霞",stay:"民宿(Pyoseon 143-23)",items:[
+  {time:"約09:30",zh:"Audrant Bakery",label:"外帶就走",noAlts:true},
+  {time:"10:30",zh:"London Bagel Museum",label:"外帶內用皆可",noAlts:true},
+  {time:"11:30",zh:"Mongle",label:"外帶就走",noAlts:true},
+  {time:"13:00",label:"午餐",openCat:"美食",openRoute:"東北"},
+  {time:"15:00",label:"海灘散步，等晚霞",openNames:["月汀里海灘","咸德海灘","金寧海水浴場","杏源海灘(柯南海灘)"]},
+  {time:"17:00",label:"晚餐",openCat:"美食",openRoute:"東北"},
   {time:"19:00",label:"海景咖啡，坐著待到晚霞",openCat:"咖啡廳",openRoute:"東北"},
-  {time:"20:00",label:"晚餐",openCat:"美食",openRoute:"東北"},
-  {time:"21:30",zh:"MJ度假村",label:"入住"},
+  {time:"20:00",label:"驅車前往表善（約45分鐘）"},
+  {time:"21:00",zh:"民宿(Pyoseon 143-23)",label:"入住（表善第一晚）"},
 ],alt:["萬丈窟"]},
-{day:2,date:"7/24（五）",theme:"濟州童話村・Snoopy Garden・城山日出峰",stay:"民宿(Pyoseon 143-23)",items:[
+{day:3,date:"7/25（六）",theme:"濟州童話村・Snoopy Garden・城山日出峰",stay:"Jeju Ri House",items:[
   {time:"約10:00",zh:"濟州童話村（附吉卜力展）",label:"吉卜力展＋童話園區"},
   {time:"12:00",label:"午餐",openCat:"美食",openRoute:"東南"},
   {time:"13:30",zh:"Snoopy Garden",label:"史努比花園"},
   {time:"16:00",zh:"城山日出峰",label:"登頂看海"},
   {time:"18:00",label:"晚餐",openCat:"美食",openRoute:"東南"},
-  {time:"20:00",zh:"民宿(Pyoseon 143-23)",label:"入住（表善第一晚）"},
+  {time:"20:00",zh:"Jeju Ri House",label:"入住"},
 ]},
-{day:3,date:"7/25（六）",theme:"濟州水上星球・牛島環島",stay:"Jeju Ri House",items:[
+{day:4,date:"7/26（日）",theme:"濟州水上星球・牛島環島",stay:"民宿(Pyoseon 143-23)",items:[
   {time:"約09:30",zh:"濟州水上星球",label:"水族館"},
   {time:"11:30",label:"午餐",openCat:"美食",openRoute:"東南"},
   {time:"13:00",zh:"城山港",label:"搭渡輪往牛島"},
@@ -727,12 +738,7 @@ const ITINERARY=[
   {time:"16:30",zh:"黑沙灘（檢滅來海水浴場）",label:"沙灘"},
   {time:"17:15",zh:"牛島天津港",label:"搭渡輪返回城山"},
   {time:"18:30",label:"晚餐",openCat:"美食",openRoute:"東南"},
-  {time:"20:30",zh:"Jeju Ri House",label:"入住"},
-]},
-{day:4,date:"7/26（日）",theme:"輕鬆日（表善・城山周邊自由活動）",stay:"民宿(Pyoseon 143-23)",items:[
-  {time:"13:00",label:"午餐",openCat:"美食",openRoute:"東南"},
-  {time:"18:00",label:"晚餐",openCat:"美食",openRoute:"東南"},
-  {time:"20:00",zh:"民宿(Pyoseon 143-23)",label:"入住（表善第二晚）"},
+  {time:"20:30",zh:"民宿(Pyoseon 143-23)",label:"入住（表善第二晚）"},
 ],alt:["海女博物館","Yumin Art Nouveau Collection","Glass House"]},
 {day:5,date:"7/27（一）",theme:"跨島西移日：西歸浦・安德",stay:"楮旨文化藝術村柑橘園民宿",items:[
   {time:"約10:00",zh:"鴛鴦瀑布",label:"透澈藍綠色溪谷瀑布"},
@@ -742,17 +748,14 @@ const ITINERARY=[
   {time:"18:30",label:"晚餐",openCat:"美食",openRoute:"西線沿海"},
   {time:"20:30",zh:"楮旨文化藝術村柑橘園民宿",label:"入住"},
 ],alt:["Hello Kitty Island","山茶花之丘","海豚點","西歸浦偶來市場"]},
-{day:6,date:"7/28（二）",theme:"挾才・9.81公園・市區購物",stay:"龍馬路公寓民宿",items:[
+{day:6,date:"7/28（二）",theme:"挾才・9.81公園・Arte Museum",stay:"龍馬路公寓民宿",items:[
   {time:"約10:00",zh:"挾才海水浴場",label:"早上沙灘時光"},
   {time:"11:30",zh:"9.81公園",label:"無動力重力賽車樂園"},
   {time:"13:30",zh:"Arte Museum Island Jeju",label:"沉浸式數位藝術館"},
   {time:"15:00",zh:"道頭洞彩虹海岸道路",label:"彩虹護欄拍照"},
-  {time:"16:00",zh:"東門市場",label:"逛街・小吃"},
-  {time:"17:30",zh:"七星路購物街",label:"購物"},
-  {time:"18:30",zh:"保健路購物街",label:"購物"},
-  {time:"19:30",label:"晚餐",openCat:"美食",openRoute:"市區"},
-  {time:"20:30",zh:"濟州國際機場",label:"還車"},
-  {time:"21:00",zh:"龍馬路公寓民宿",label:"叫車前往，入住（最後一晚）"},
+  {time:"18:00",label:"晚餐",openCat:"美食",openRoute:"市區"},
+  {time:"19:30",zh:"濟州國際機場",label:"還車"},
+  {time:"20:00",zh:"龍馬路公寓民宿",label:"叫車前往，入住（最後一晚）"},
 ],alt:["涯月咖啡街","新星朋友"]},
 {day:7,date:"7/29（三）",theme:"賦歸",stay:null,items:[
   {time:"約08:30",zh:"龍馬路公寓民宿",label:"退房，叫車前往機場（車已於28日晚還）"},
