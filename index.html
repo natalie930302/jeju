@@ -159,6 +159,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);display:f
 .pc-name{font-size:17px;font-weight:800;color:var(--text);line-height:1.25;margin-bottom:3px;letter-spacing:-.2px;text-wrap:balance}
 .pc-en{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px}
 .pc-kr{font-size:11px;color:var(--muted);font-weight:500}
+.pc-addr{font-size:11px;color:var(--muted);font-weight:500;margin-top:3px}
 
 /* ─ 快速資訊 Pills ─ */
 .pc-pills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px}
@@ -521,8 +522,8 @@ function closePopup(cb){
 function showPopup(idx){
   const p=DATA[idx];
   const col=colorOf(p),em=EMO[p.cat];
-  // naver_url：若有店家提供的 Naver Map 專屬連結就直接用，否則退回地址搜尋（比店名更容易定位到正確地點）
-  const nurl=p.naver_url
+  // naver_url：若有店家提供的 Naver Map 專屬連結就直接用，否則退回地址搜尋（比店名更容易定位到正確地點）；住宿一律用地址搜尋，比對到錯誤naver_url的風險比私人房源本身還高
+  const nurl=(p.cat!=="住宿"&&p.naver_url)
     ?p.naver_url
     :"https://map.naver.com/v5/search/"+encodeURIComponent(p.addr_kr||p.kr);
   // kakao_id：若有比對到正確的 Kakao 分店就直接連到該頁面，否則退回地址搜尋；住宿/交通不顯示Kakao按鈕
@@ -542,6 +543,7 @@ function showPopup(idx){
         '<div class="pc-name">'+(p.zh||p.en)+'</div>'+
         (p.zh&&p.en?'<div class="pc-en">'+p.en+'</div>':'')+
         '<div class="pc-kr">'+p.kr+'</div>'+
+        (p.cat==="住宿"&&p.addr_kr?'<div class="pc-addr">📍 '+p.addr_kr+'</div>':'')+
       '</div>'+
     '</div>';
 
